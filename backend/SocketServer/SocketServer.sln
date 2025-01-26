@@ -2,6 +2,12 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SocketConsole", "SocketConsole\SocketConsole.csproj", "{C88B1DC0-2B5B-4534-8F8D-A93EC5888EEE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameServer", "GameServer\GameServer.csproj", "{F6CA163E-DDF4-4D51-9995-AF5CD4C0B488}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameClient", "GameClient\GameClient.csproj", "{F0A49EA1-9AEE-4967-A8EF-C6778E756959}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameShared", "GameShared\GameShared.csproj", "{B367018F-2AA4-4F94-8E8C-103210B37CDC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +18,17 @@ Global
 		{C88B1DC0-2B5B-4534-8F8D-A93EC5888EEE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C88B1DC0-2B5B-4534-8F8D-A93EC5888EEE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C88B1DC0-2B5B-4534-8F8D-A93EC5888EEE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F6CA163E-DDF4-4D51-9995-AF5CD4C0B488}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F6CA163E-DDF4-4D51-9995-AF5CD4C0B488}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F6CA163E-DDF4-4D51-9995-AF5CD4C0B488}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F6CA163E-DDF4-4D51-9995-AF5CD4C0B488}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F0A49EA1-9AEE-4967-A8EF-C6778E756959}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F0A49EA1-9AEE-4967-A8EF-C6778E756959}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F0A49EA1-9AEE-4967-A8EF-C6778E756959}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F0A49EA1-9AEE-4967-A8EF-C6778E756959}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B367018F-2AA4-4F94-8E8C-103210B37CDC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B367018F-2AA4-4F94-8E8C-103210B37CDC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B367018F-2AA4-4F94-8E8C-103210B37CDC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B367018F-2AA4-4F94-8E8C-103210B37CDC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
