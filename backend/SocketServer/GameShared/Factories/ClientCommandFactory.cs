@@ -1,36 +1,48 @@
 using GameShared;
-using GameShared.Commands;
 using GameShared.Interfaces;
+using System;
+using System.Collections.Generic;
 
-namespace GameClient;
-
-public class ClientCommandFactory
+namespace GameShared.Factories
 {
-    private readonly Dictionary<ServerToClientEvent, Func<IServerToClientCommandHandler>> _commands = new();
-
-    public ClientCommandFactory()
+    public class ClientCommandFactory
     {
-        RegisterCommand(() => new PlayerMoveCommand());
-    }
+        private readonly Dictionary<ServerToClientEvent, Func<IServerToClientCommandHandler>> _commands = new();
 
-    public void RegisterCommand(Func<IServerToClientCommandHandler> commandFactory)
-    {
-        IServerToClientCommandHandler commandInstance = commandFactory();
-        _commands[commandInstance.CommandType] = commandFactory;
-    }
-
-    public IServerToClientCommandHandler? ParseCommand(byte[] data, PaperClient client)
-    {
-        ServerToClientEvent type = (ServerToClientEvent)data[0];
-
-        if (_commands.TryGetValue(type, out var commandFactory))
+        public ClientCommandFactory(IEnumerable<Func<IServerToClientCommandHandler>> commandFactories)
         {
-            var command = commandFactory();
-            command.ParseFromBytes(data);
-            command.Execute(client);
-            return command;
+            foreach (var factory in commandFactories)
+            {
+                RegisterCommand(factory);
+            }
         }
 
-        return null;
+        public void RegisterCommand(Func<IServerToClientCommandHandler> commandFactory)
+        {
+            IServerToClientCommandHandler commandInstance = commandFactory();
+            _commands[commandInstance.CommandType] = commandFactory;
+        }
+
+        public IServerToClientCommandHandler? ParseCommand(byte[] data, PaperClient client)
+        {
+            if (data.Length == 0)
+            {
+                Console.WriteLine("Ошибка: пустой пакет данных.");
+                return null;
+            }
+
+            ServerToClientEvent type = (ServerToClientEvent)data[0];
+
+            if (_commands.TryGetValue(type, out var commandFactory))
+            {
+                var command = commandFactory();
+                command.ParseFromBytes(data);
+                command.Execute(client);
+                return command;
+            }
+
+            Console.WriteLine($"Ошибка: нераспознанная команда {type}");
+            return null;
+        }
     }
 }

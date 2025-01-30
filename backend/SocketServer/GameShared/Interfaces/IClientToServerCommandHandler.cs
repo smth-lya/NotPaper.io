@@ -10,5 +10,5 @@ public interface IClientToServerCommandHandler
     int PacketSize { get; } //  Добавляем размер пакета
     void ParseFromBytes(byte[] data);
     byte[] ToBytes();
-    void Execute(PaperServer server);
+    Task Execute(PaperServer server, Socket clientSocket);
 }

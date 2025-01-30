@@ -38,7 +38,7 @@ public class ServerCommandFactory
         {
             var command = commandFactory();
             command.ParseFromBytes(data);
-            command.Execute(server);
+            command.Execute(server, clientSocket);
             return command;
         }
 

@@ -1,8 +1,9 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading;
+using System.Threading.Tasks;
 using GameServer;
 using GameShared.Interfaces;
 using GameShared.Entity;
@@ -12,16 +13,17 @@ namespace GameShared
     public class PaperServer
     {
         private readonly int _port;
-        private readonly int _maxPlayers;
+        public readonly int MaxPlayers;
         private readonly Socket _serverSocket;
-        private readonly ServerCommandFactory _commandFactory; // 🔥 Фабрика команд
-        private readonly Dictionary<int, Player> _players = new();
+        // Здесь будут храниться команды, которые сервер может обработать
+        private readonly ServerCommandFactory _commandFactory; // Фабрика команд
+        public readonly ConcurrentDictionary<int, Player> Players = new();
         private readonly object _lock = new();
 
         public PaperServer(int port, int maxPlayers, IEnumerable<Func<IClientToServerCommandHandler>> commandFactories)
         {
             _port = port;
-            _maxPlayers = maxPlayers;
+            MaxPlayers = maxPlayers;
             _serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             _commandFactory = new ServerCommandFactory(commandFactories);
         }
@@ -29,7 +31,7 @@ namespace GameShared
         public async Task Start()
         {
             _serverSocket.Bind(new IPEndPoint(IPAddress.Any, _port));
-            _serverSocket.Listen(_maxPlayers);
+            _serverSocket.Listen(MaxPlayers);
             Console.WriteLine($"Сервер запущен на порту {_port}");
             await AcceptClients();
         }
@@ -40,11 +42,11 @@ namespace GameShared
             {
                 Socket clientSocket = await _serverSocket.AcceptAsync();
                 Console.WriteLine($"Новый игрок подключился: {clientSocket.RemoteEndPoint}");
-                _ = Task.Run(() => { HandleClient(clientSocket); });
+                _ = Task.Run(() => HandleClient(clientSocket));
             }
         }
 
-        private void HandleClient(Socket clientSocket)
+        private async Task HandleClient(Socket clientSocket)
         {
             try
             {
@@ -53,7 +55,8 @@ namespace GameShared
                 while (true)
                 {
                     byte[] buffer = new byte[1024];
-                    int receivedBytes = clientSocket.Receive(buffer);
+                    int receivedBytes =
+                        await clientSocket.ReceiveAsync(new ArraySegment<byte>(buffer), SocketFlags.None);
                     if (receivedBytes == 0) break;
 
                     messageBuffer.AddRange(buffer[..receivedBytes]);
@@ -75,7 +78,7 @@ namespace GameShared
                     if (command != null)
                     {
                         Console.WriteLine($"Обработана команда: {command.CommandType}");
-                        command.Execute(this); // 🔥 Теперь передаём `Socket`
+                        await command.Execute(this, clientSocket);
                     }
                 }
             }
@@ -88,23 +91,55 @@ namespace GameShared
                 clientSocket.Close();
             }
         }
-
-        public void Broadcast(byte[] data)
+        
+        public int GeneratePlayerId()
         {
-            lock (_lock)
+            int newId;
+            do
             {
-                foreach (var player in _players.Values)
+                newId = new Random().Next(1, 10000);
+            } while (Players.ContainsKey(newId)); // Генерируем, пока ID уникален
+
+            return newId;
+        }
+
+        public async Task Broadcast(byte[] data)
+        {
+            List<Task> sendTasks = new List<Task>();
+
+            foreach (var player in Players.Values)
+            {
+                try
                 {
-                    try
-                    {
-                        player.Socket.Send(data);
-                    }
-                    catch
-                    {
-                        Console.WriteLine($"Ошибка отправки данных игроку {player.Id}");
-                    }
+                    sendTasks.Add(player.Socket.SendAsync(new ArraySegment<byte>(data), SocketFlags.None));
+                }
+                catch
+                {
+                    Console.WriteLine($"Ошибка отправки данных игроку {player.Id}");
                 }
             }
+
+            await Task.WhenAll(sendTasks); // Ждём завершения всех отправок
+        }
+        
+        
+        public async Task Broadcast(byte[] data, Func<Player, bool> predicate)
+        {
+            List<Task> sendTasks = new List<Task>();
+
+            foreach (var player in Players.Values.Where(predicate))
+            {
+                try
+                {
+                    sendTasks.Add(player.Socket.SendAsync(new ArraySegment<byte>(data), SocketFlags.None));
+                }
+                catch
+                {
+                    Console.WriteLine($"Ошибка отправки данных игроку {player.Id}");
+                }
+            }
+
+            await Task.WhenAll(sendTasks); // 🔥 Ждём завершения всех отправок
         }
     }
 }

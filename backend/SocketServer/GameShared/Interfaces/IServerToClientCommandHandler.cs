@@ -1,8 +1,3 @@
-using System.Net.Sockets;
-using GameClient;
-using GameServer;
-using GameShared;
-
 namespace GameShared.Interfaces;
 
 public interface IServerToClientCommandHandler
@@ -13,5 +8,5 @@ public interface IServerToClientCommandHandler
     int PacketSize { get; } //  Добавляем размер пакета
     void ParseFromBytes(byte[] data);
     byte[] ToBytes();
-    void Execute(PaperClient server);
+    Task Execute(PaperClient server);
 }

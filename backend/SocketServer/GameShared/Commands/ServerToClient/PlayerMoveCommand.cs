@@ -1,8 +1,6 @@
-using GameClient;
-using GameShared;
 using GameShared.Interfaces;
 
-namespace GameShared.Commands;
+namespace GameShared.Commands.ServerToClient;
 
 public class PlayerMoveCommand : IServerToClientCommandHandler
 {
@@ -42,7 +40,7 @@ public class PlayerMoveCommand : IServerToClientCommandHandler
         return result;
     }
 
-    public void Execute(PaperClient client)
+    public async Task Execute(PaperClient client)
     {
         Console.WriteLine($"Игрок {PlayerId} передвинулся в направлении {Direction}");
 

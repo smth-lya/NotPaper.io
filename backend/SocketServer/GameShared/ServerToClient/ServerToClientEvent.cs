@@ -2,7 +2,7 @@ namespace GameShared;
 
 public enum ServerToClientEvent
 {
-    WELCOME = 1,          // Подтверждение входа в игру
+    WELCOME = 1,         // Подтверждение входа в игру
     PLAYER_MOVE,         // Сообщает о движении игрока
     PLAYER_DEAD,         // Игрок был убит
     PLAYER_JOIN,         // Новый игрок вошел в игру

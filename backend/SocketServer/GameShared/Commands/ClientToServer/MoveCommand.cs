@@ -1,7 +1,8 @@
 using System.Net.Sockets;
+using GameShared.Commands.ServerToClient;
 using GameShared.Interfaces;
 
-namespace GameShared.Commands;
+namespace GameShared.Commands.ClientToServer;
 
 public class MoveCommand : IClientToServerCommandHandler
 {
@@ -33,7 +34,7 @@ public class MoveCommand : IClientToServerCommandHandler
         return result;
     }
 
-    public void Execute(PaperServer server)
+    public async Task Execute(PaperServer server, Socket clientSocket)
     {
         Console.WriteLine($"Игрок {PlayerId} сменил направление на {Direction}");
 
@@ -43,6 +44,6 @@ public class MoveCommand : IClientToServerCommandHandler
         // }
 
         byte[] response = new PlayerMoveCommand(PlayerId, Direction).ToBytes();
-        server.Broadcast(response);
+        await server.Broadcast(response);
     }
 }
