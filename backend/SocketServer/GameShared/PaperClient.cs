@@ -3,7 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-namespace GameClient
+namespace GameShared
 {
     public class PaperClient
     {
