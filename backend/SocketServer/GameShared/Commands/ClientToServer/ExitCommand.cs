@@ -45,7 +45,7 @@ namespace GameShared.Commands.ClientToServer
             {
                 Console.WriteLine($"Игрок {PlayerId} удалён.");
 
-                // 🔥 Уведомляем всех игроков о выходе
+                // Уведомляем всех игроков о выходе
                 var playerExitCommand = new PlayerExitCommand(PlayerId);
                 await server.Broadcast(playerExitCommand.ToBytes());
             }

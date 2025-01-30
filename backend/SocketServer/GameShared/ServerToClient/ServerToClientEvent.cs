@@ -1,6 +1,6 @@
 namespace GameShared;
 
-public enum ServerToClientEvent
+public enum ServerToClientEvent: byte
 {
     WELCOME = 1,         // Подтверждение входа в игру
     PLAYER_MOVE,         // Сообщает о движении игрока

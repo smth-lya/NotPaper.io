@@ -96,6 +96,16 @@ namespace GameShared
                 OnCommandReceived?.Invoke(commandType, command);
             }
         }
+        
+        public async Task ChangeDirection(int direction)
+        {
+            Console.WriteLine($"[Client] Игрок {PlayerId} сменил направление на {direction}");
+
+            var moveCommand = new MoveCommand(PlayerId, direction);
+            byte[] movePacket = moveCommand.ToBytes();
+
+            await _socket.SendAsync(new ArraySegment<byte>(movePacket), SocketFlags.None);
+        }
 
         public async Task Exit()
         {

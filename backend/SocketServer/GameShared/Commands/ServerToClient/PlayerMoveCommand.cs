@@ -1,3 +1,4 @@
+using GameShared;
 using GameShared.Interfaces;
 
 namespace GameShared.Commands.ServerToClient;
@@ -5,19 +6,18 @@ namespace GameShared.Commands.ServerToClient;
 public class PlayerMoveCommand : IServerToClientCommandHandler
 {
     public ServerToClientEvent CommandType => ServerToClientEvent.PLAYER_MOVE;
-    public int PacketSize => 6;
+    public int PacketSize => 6; // 1 байт - команда, 4 байта - PlayerId, 1 байт - направление
 
     public int PlayerId { get; private set; }
     public int Direction { get; private set; }
 
-    // 🔥 Словарь со структурами данных
     public static Dictionary<string, int> FieldOffsets { get; protected set; } = new()
     {
-        { "PlayerId", 1 },
-        { "Direction", 5 }
+        { "PlayerId", 1 }, 
+        { "Direction", 5 } 
     };
 
-    public PlayerMoveCommand() {}
+    public PlayerMoveCommand() { }
 
     public PlayerMoveCommand(int playerId, int direction)
     {
@@ -42,11 +42,8 @@ public class PlayerMoveCommand : IServerToClientCommandHandler
 
     public async Task Execute(PaperClient client)
     {
-        Console.WriteLine($"Игрок {PlayerId} передвинулся в направлении {Direction}");
+        Console.WriteLine($"Игрок {PlayerId} сменил направление на {Direction}");
 
-        // if (client.Players.TryGetValue(PlayerId, out var player))
-        // {
-        //     player.CurrentDirection = (Direction)Direction;
-        // }
+        // 🔥 Unity может подписаться на это событие и обработать его
     }
 }
