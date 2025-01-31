@@ -75,11 +75,12 @@ namespace GameShared
 
                     IClientToServerCommandHandler? command =
                         _commandFactory.ParseCommand(fullMessage, clientSocket, this);
-                    if (command != null)
-                    {
-                        Console.WriteLine($"Обработана команда: {command.CommandType}");
-                        await command.Execute(this, clientSocket);
-                    }
+                    await command?.Execute(this, clientSocket)!;
+                    Console.WriteLine($"Обработана команда: {command.CommandType}");
+                    // if (command != null)
+                    // {
+                    //     Console.WriteLine($"Обработана команда: {command.CommandType}");
+                    // }
                 }
             }
             catch (Exception ex)
