@@ -13,7 +13,7 @@ namespace GameShared
 {
     public class PaperClient
     {
-        private readonly string _serverIp;
+        private readonly IPAddress _serverIp;
         private readonly int _serverPort;
         private readonly Socket _socket;
         private readonly EndPoint _serverEP;
@@ -25,12 +25,12 @@ namespace GameShared
         public event Action<ServerToClientEvent, IServerToClientCommandHandler>? OnCommandReceived;
         public int PlayerId { get;  set; } // Теперь у клиента есть `PlayerId`
 
-        public PaperClient(string serverIp, int serverPort, IEnumerable<Func<IServerToClientCommandHandler>> commandFactories)
+        public PaperClient(IPAddress serverIp, int serverPort, IEnumerable<Func<IServerToClientCommandHandler>> commandFactories)
         {
             _serverIp = serverIp;
             _serverPort = serverPort;
             _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            _serverEP = new IPEndPoint(IPAddress.Parse(_serverIp), _serverPort);
+            _serverEP = new IPEndPoint(_serverIp, _serverPort);
             _commandFactory = new ClientCommandFactory(commandFactories);
         }
 
