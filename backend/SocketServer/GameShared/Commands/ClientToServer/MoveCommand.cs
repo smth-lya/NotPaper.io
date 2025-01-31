@@ -1,57 +1,69 @@
+using System;
+using System.Collections.Generic;
 using System.Net.Sockets;
+using System.Numerics;
+using System.Threading.Tasks;
 using GameShared.Commands.ServerToClient;
-using GameShared.Interfaces;
 
-namespace GameShared.Commands.ClientToServer;
-
-public class MoveCommand : IClientToServerCommandHandler
+namespace GameShared.Commands.ClientToServer
 {
-    public ClientToServerEvent CommandType => ClientToServerEvent.MOVE;
-    public int PacketSize => 6; // 1 байт - команда, 4 байта - PlayerId, 1 байт - направление
-
-    public int PlayerId { get; private set; }
-    public int Direction { get; private set; } // 0 = NONE, 1 = UP, 2 = DOWN, 3 = LEFT, 4 = RIGHT
-
-    public static Dictionary<string, int> FieldOffsets { get; protected set; } = new()
+    public sealed class MoveCommand : ClientToServerCommand
     {
-        { "PlayerId", 1 }, // ID игрока с 1-го байта
-        { "Direction", 5 }  // Направление с 5-го байта
-    };
-
-    public MoveCommand() { }
-
-    public MoveCommand(int playerId, int direction)
-    {
-        PlayerId = playerId;
-        Direction = direction;
-    }
-
-    public void ParseFromBytes(byte[] data)
-    {
-        PlayerId = BitConverter.ToInt32(data, FieldOffsets["PlayerId"]);
-        Direction = data[FieldOffsets["Direction"]];
-    }
-
-    public byte[] ToBytes()
-    {
-        byte[] result = new byte[PacketSize];
-        result[0] = (byte)CommandType;
-        BitConverter.GetBytes(PlayerId).CopyTo(result, FieldOffsets["PlayerId"]);
-        result[FieldOffsets["Direction"]] = (byte)Direction;
-        return result;
-    }
-    
-    public async Task Execute(PaperServer server, Socket clientSocket)
-    {
-        Console.WriteLine($"Игрок {PlayerId} сменил направление на {Direction}");
-
-        if (server.Players.TryGetValue(PlayerId, out var player))
+        private static readonly Dictionary<string, int> _fieldOffsets = new()
         {
-            player.CurrentDirection = Direction;
+            { "PlayerId", 1 },
+            { "DirX", 5 },
+            { "DirZ", 9 }
+        };
+
+        public override ClientToServerEvent CommandType => ClientToServerEvent.MOVE;
+        public override int PacketSize => sizeof(byte) + sizeof(int) + sizeof(float) * 2; // 1 байт - команда, 4 байта - PlayerId, 1 байт - направление
+
+        public int PlayerId { get; private set; }
+        public Vector3 Direction { get; private set; } 
+
+        public MoveCommand() { }
+
+        public MoveCommand(int playerId, Vector3 direction)
+        {
+            PlayerId = playerId;
+            Direction = direction;
         }
 
-        // 🔥 Создаём команду `PLAYER_MOVE`
-        byte[] response = new PlayerMoveCommand(PlayerId, Direction).ToBytes();
-        await server.Broadcast(response);
+        public override void ParseFromBytes(byte[] data)
+        {
+            PlayerId = BitConverter.ToInt32(data, _fieldOffsets["PlayerId"]);
+
+            Direction = new Vector3()
+            {
+                X = BitConverter.ToSingle(data, _fieldOffsets["DirX"]),
+                Z = BitConverter.ToSingle(data, _fieldOffsets["DirZ"])
+            };
+        }
+
+        public override byte[] ToBytes()
+        {
+            byte[] result = new byte[PacketSize];
+            result[0] = (byte)CommandType; 
+
+            BitConverter.GetBytes(PlayerId).CopyTo(result, _fieldOffsets["PlayerId"]);
+            BitConverter.GetBytes(Direction.X).CopyTo(result, _fieldOffsets["DirX"]);
+            BitConverter.GetBytes(Direction.Z).CopyTo(result, _fieldOffsets["DirZ"]);
+
+            return result;
+        }
+
+        public override async Task ExecuteAsync(PaperServer server, Socket clientSocket)
+        {
+            Console.WriteLine($"Игрок {PlayerId} сменил направление на {Direction}");
+
+            if (server.Players.TryGetValue(PlayerId, out var player))
+            {
+                player.Direction = Direction;
+            }
+
+            byte[] response = new PlayerMoveCommand(PlayerId, Direction).ToBytes();
+            await server.BroadcastAsync(response);
+        }
     }
 }

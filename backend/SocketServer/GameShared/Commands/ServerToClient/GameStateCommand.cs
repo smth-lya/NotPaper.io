@@ -1,75 +1,86 @@
-﻿using GameShared;
-using GameShared.Interfaces;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Net.Sockets;
+using System.Numerics;
+using System.Threading.Tasks;
 
 namespace GameShared.Commands.ServerToClient
 {
-    public class GameStateCommand : IServerToClientCommandHandler
+    public sealed class GameStateCommand : ServerToClientCommand
     {
-        public ServerToClientEvent CommandType => ServerToClientEvent.GAME_STATE;
-        public int PacketSize => 1 + Players.Count * 12; // 1 байт - команда, 4 байта - PlayerId, 4 байта - X, 4 байта - Y
-
-        public List<(int PlayerId, float X, float Y)> Players { get; private set; } = new();
-
-        public static Dictionary<string, int> FieldOffsets { get; protected set; } = new()
+        private static readonly Dictionary<string, int> FieldOffsets = new()
         {
             { "PlayerId", 1 },
             { "X", 5 },
-            { "Y", 9 }
+            { "Z", 9 },
+            { "DirX", 13 },
+            { "DirZ", 17 }
         };
+
+        private int _playerDataSize = sizeof(int) + sizeof(float) * 4;
+
+        public override ServerToClientEvent CommandType => ServerToClientEvent.GAME_STATE;
+        public override int PacketSize => sizeof(byte) + Players.Count * _playerDataSize;
+
+        public List<(int PlayerId, Vector3 Position, Vector3 Direction)> Players { get; private set; } = new();
+
 
         public GameStateCommand() { }
 
-        public GameStateCommand(List<(int PlayerId, float X, float Y)> players)
+        public GameStateCommand(List<(int PlayerId, Vector3 Position, Vector3 Direction)> players)
         {
             Players = players;
         }
 
-        public void ParseFromBytes(byte[] data)
+        public override void ParseFromBytes(byte[] data)
         {
             Players.Clear();
-            int count = (data.Length - 1) / 12; // 1 байт - команда, 12 байт на каждого игрока
+
+            int count = (data.Length - 1) / _playerDataSize;
             for (int i = 0; i < count; i++)
             {
-                int playerId = BitConverter.ToInt32(data, 1 + i * 12);
-                float x = BitConverter.ToSingle(data, 5 + i * 12);
-                float y = BitConverter.ToSingle(data, 9 + i * 12);
-                Players.Add((playerId, x, y));
+                int playerId = BitConverter.ToInt32(data, FieldOffsets["PlayerId"] + i * _playerDataSize);
+
+                var position = new Vector3()
+                {
+                    X = BitConverter.ToSingle(data, FieldOffsets["X"] + i * _playerDataSize),
+                    Z = BitConverter.ToSingle(data, FieldOffsets["Z"] + i * _playerDataSize)
+                };
+
+                var direction = new Vector3()
+                {
+                    X = BitConverter.ToSingle(data, FieldOffsets["DirX"] + i * _playerDataSize),
+                    Z = BitConverter.ToSingle(data, FieldOffsets["DirZ"] + i * _playerDataSize)
+                };
+
+                Players.Add((playerId, position, direction));
             }
         }
 
-        public byte[] ToBytes()
+        public override byte[] ToBytes()
         {
             byte[] result = new byte[PacketSize];
             result[0] = (byte)CommandType;
 
             for (int i = 0; i < Players.Count; i++)
             {
-                BitConverter.GetBytes(Players[i].PlayerId).CopyTo(result, 1 + i * 12);
-                BitConverter.GetBytes(Players[i].X).CopyTo(result, 5 + i * 12);
-                BitConverter.GetBytes(Players[i].Y).CopyTo(result, 9 + i * 12);
+                var player = Players[i];
+                BitConverter.GetBytes(player.PlayerId).CopyTo(result, FieldOffsets["PlayerId"] + i * _playerDataSize);
+
+                BitConverter.GetBytes(player.Position.X).CopyTo(result, FieldOffsets["X"] + i * _playerDataSize);
+                BitConverter.GetBytes(player.Position.Z).CopyTo(result, FieldOffsets["Z"] + i * _playerDataSize);
+                
+                BitConverter.GetBytes(player.Direction.X).CopyTo(result, FieldOffsets["DirX"] + i * _playerDataSize);
+                BitConverter.GetBytes(player.Direction.Z).CopyTo(result, FieldOffsets["DirZ"] + i * _playerDataSize);
             }
 
             return result;
         }
 
-        public async Task Execute(PaperServer server, Socket clientSocket)
+        public override Task ExecuteAsync(PaperClient client)
         {
-            Console.WriteLine($"Игрок {PlayerId} сообщил свою позицию: X={X}, Y={Y}");
+            Console.WriteLine("[Client] Получен `GameStateCommand`, обновляем позиции игроков...");
 
-            server.PlayerPositions[PlayerId] = (X, Y);
-
-            // 🔥 Проверяем, прислали ли все игроки свои позиции
-            if (server.PlayerPositions.Count == server.Players.Count)
-            {
-                Console.WriteLine("[Server] Все игроки отправили позиции, рассылаем `GameStateCommand`.");
-                var gameStateCommand = new GameStateCommand(
-                    server.Players.Values.Select(p => (p.Id, server.PlayerPositions[p.Id].X, server.PlayerPositions[p.Id].Y)).ToList()
-                );
-                await server.Broadcast(gameStateCommand.ToBytes());
-            }
+            return Task.CompletedTask;
         }
     }
 }

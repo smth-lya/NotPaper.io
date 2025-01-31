@@ -1,6 +1,5 @@
 ﻿using GameShared;
 using GameShared.Commands.ClientToServer;
-using GameShared.Interfaces;
 
 namespace SocketConsole;
 
@@ -8,14 +7,14 @@ class Program
 {
     static async Task Main(string[] args)
     {
-        var server = new PaperServer(6677, 4, new List<Func<IClientToServerCommandHandler>>()
+        var server = new PaperServer(6677, 4, new List<Func<ClientToServerCommand>>
         {
-            () => new ExitCommand(),
             () => new JoinCommand(),
-            () => new MoveCommand()
+            () => new MoveCommand(),
+            () => new ExitCommand(),
+            () => new SendPositionCommand(),
         });
-        
-        
-        await server.Start();
+
+        await server.StartAsync();
     }
 }

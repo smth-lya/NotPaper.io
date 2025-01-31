@@ -1,19 +1,22 @@
 using GameShared;
-using GameShared.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace GameShared.Commands.ServerToClient
 {
-    public class PlayerExitCommand : IServerToClientCommandHandler
+    public sealed class PlayerExitCommand : ServerToClientCommand
     {
-        public ServerToClientEvent CommandType => ServerToClientEvent.PLAYER_EXIT;
-        public int PacketSize => 5;
-
-        public int PlayerId { get; private set; }
-
-        public static Dictionary<string, int> FieldOffsets { get; protected set; } = new()
+        private static readonly Dictionary<string, int> _fieldOffsets = new()
         {
             { "PlayerId", 1 }
         };
+
+        public override ServerToClientEvent CommandType => ServerToClientEvent.PLAYER_EXIT;
+        public override int PacketSize => sizeof(byte) + sizeof(int);
+
+        public int PlayerId { get; private set; }
+
 
         public PlayerExitCommand() { }
 
@@ -22,23 +25,27 @@ namespace GameShared.Commands.ServerToClient
             PlayerId = playerId;
         }
 
-        public void ParseFromBytes(byte[] data)
+        public override void ParseFromBytes(byte[] data)
         {
-            PlayerId = BitConverter.ToInt32(data, FieldOffsets["PlayerId"]);
+            PlayerId = BitConverter.ToInt32(data, _fieldOffsets["PlayerId"]);
         }
 
-        public byte[] ToBytes()
+        public override byte[] ToBytes()
         {
             byte[] result = new byte[PacketSize];
             result[0] = (byte)CommandType;
-            BitConverter.GetBytes(PlayerId).CopyTo(result, FieldOffsets["PlayerId"]);
+
+            BitConverter.GetBytes(PlayerId).CopyTo(result, _fieldOffsets["PlayerId"]);
+            
             return result;
         }
 
-        public async Task Execute(PaperClient client)
+        public override Task ExecuteAsync(PaperClient client)
         {
             Console.WriteLine($"Игрок {PlayerId} покинул игру!");
             // В Unity можно обновить список игроков
+
+            return Task.CompletedTask;
         }
     }
 }
