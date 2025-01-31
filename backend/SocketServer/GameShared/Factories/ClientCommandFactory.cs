@@ -1,5 +1,4 @@
 using GameShared;
-using GameShared.Interfaces;
 using System;
 using System.Collections.Generic;
 
@@ -7,9 +6,9 @@ namespace GameShared.Factories
 {
     public class ClientCommandFactory
     {
-        private readonly Dictionary<ServerToClientEvent, Func<IServerToClientCommandHandler>> _commands = new();
+        private readonly Dictionary<ServerToClientEvent, Func<ServerToClientCommand>> _commands = new();
 
-        public ClientCommandFactory(IEnumerable<Func<IServerToClientCommandHandler>> commandFactories)
+        public ClientCommandFactory(IEnumerable<Func<ServerToClientCommand>> commandFactories)
         {
             foreach (var factory in commandFactories)
             {
@@ -17,13 +16,13 @@ namespace GameShared.Factories
             }
         }
 
-        public void RegisterCommand(Func<IServerToClientCommandHandler> commandFactory)
+        public void RegisterCommand(Func<ServerToClientCommand> commandFactory)
         {
-            IServerToClientCommandHandler commandInstance = commandFactory();
+            ServerToClientCommand commandInstance = commandFactory();
             _commands[commandInstance.CommandType] = commandFactory;
         }
 
-        public IServerToClientCommandHandler? ParseCommand(byte[] data, PaperClient client)
+        public ServerToClientCommand? ParseCommand(byte[] data, PaperClient client)
         {
             if (data.Length == 0)
             {

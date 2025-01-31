@@ -1,21 +1,17 @@
-﻿using System.Net.Sockets;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Sockets;
 using System.Numerics;
+using System.Threading.Tasks;
 using GameShared.Commands.ServerToClient;
-using GameShared.Interfaces;
+using GameShared.Entity;
 
 namespace GameShared.Commands.ClientToServer
 {
-    public class SendPositionCommand : IClientToServerCommandHandler
+    public sealed class SendPositionCommand : ClientToServerCommand
     {
-        public ClientToServerEvent CommandType => ClientToServerEvent.SEND_POSITION;
-        public int PacketSize => 21; // 1 байт - команда, 4 - PlayerId, 4 - X, 4 - Z, 4 - DirX, 4 - DirZ
-
-        public int PlayerId { get; private set; }
-        public float X { get; private set; }
-        public float Z { get; private set; }
-        public Vector2 Direction { get; private set; }
-
-        public static Dictionary<string, int> FieldOffsets { get; protected set; } = new()
+        private static readonly Dictionary<string, int> _fieldOffsets = new()
         {
             { "PlayerId", 1 },
             { "X", 5 },
@@ -24,55 +20,84 @@ namespace GameShared.Commands.ClientToServer
             { "DirZ", 17 }
         };
 
+        public override ClientToServerEvent CommandType => ClientToServerEvent.SEND_POSITION;
+        
+        // 1 байт - команда, 4 - PlayerId, 4 - X, 4 - Z, 4 - DirX, 4 - DirZ
+        public override int PacketSize => sizeof(byte) + sizeof(int) + sizeof(float) * 4; 
+
+        public int PlayerId { get; private set; }
+     
+        public Vector3 Position { get; private set; }
+        public Vector3 Direction { get; private set; }
+
         public SendPositionCommand() { }
 
-        public SendPositionCommand(int playerId, float x, float z, Vector2 direction)
+        public SendPositionCommand(BasePlayer context)
+        {
+            PlayerId = context.Id;
+            Position = context.Position;
+            Direction = context.Direction;
+        }
+
+        public SendPositionCommand(int playerId, Vector3 position, Vector3 direction)
         {
             PlayerId = playerId;
-            X = x;
-            Z = z;
+            Position = position;
             Direction = direction;
         }
 
-        public void ParseFromBytes(byte[] data)
+        public override void ParseFromBytes(byte[] data)
         {
-            PlayerId = BitConverter.ToInt32(data, FieldOffsets["PlayerId"]);
-            X = BitConverter.ToSingle(data, FieldOffsets["X"]);
-            Z = BitConverter.ToSingle(data, FieldOffsets["Z"]);
-            float dirX = BitConverter.ToSingle(data, FieldOffsets["DirX"]);
-            float dirZ = BitConverter.ToSingle(data, FieldOffsets["DirZ"]);
-            Direction = new Vector2(dirX, dirZ);
+            PlayerId = BitConverter.ToInt32(data, _fieldOffsets["PlayerId"]);
+
+            Position = new Vector3()
+            {
+                X = BitConverter.ToSingle(data, _fieldOffsets["X"]),
+                Z = BitConverter.ToSingle(data, _fieldOffsets["Z"])
+            };
+
+            Direction = new Vector3()
+            {
+                X = BitConverter.ToSingle(data, _fieldOffsets["DirX"]),
+                Z = BitConverter.ToSingle(data, _fieldOffsets["DirZ"])
+            };
         }
 
-        public byte[] ToBytes()
+        public override byte[] ToBytes()
         {
             byte[] result = new byte[PacketSize];
+
             result[0] = (byte)CommandType;
-            BitConverter.GetBytes(PlayerId).CopyTo(result, FieldOffsets["PlayerId"]);
-            BitConverter.GetBytes(X).CopyTo(result, FieldOffsets["X"]);
-            BitConverter.GetBytes(Z).CopyTo(result, FieldOffsets["Z"]);
-            BitConverter.GetBytes(Direction.X).CopyTo(result, FieldOffsets["DirX"]);
-            BitConverter.GetBytes(Direction.Y).CopyTo(result, FieldOffsets["DirZ"]);
+
+            BitConverter.GetBytes(PlayerId).CopyTo(result, _fieldOffsets["PlayerId"]);
+
+            BitConverter.GetBytes(Position.X).CopyTo(result, _fieldOffsets["X"]);
+            BitConverter.GetBytes(Position.Z).CopyTo(result, _fieldOffsets["Z"]);
+
+            BitConverter.GetBytes(Direction.X).CopyTo(result, _fieldOffsets["DirX"]);
+            BitConverter.GetBytes(Direction.Z).CopyTo(result, _fieldOffsets["DirZ"]);
+
             return result;
         }
 
-        public async Task Execute(PaperServer server, Socket clientSocket)
+        public override async Task ExecuteAsync(PaperServer server, Socket clientSocket)
         {
-            Console.WriteLine($"Игрок {PlayerId} сообщил свою позицию: X={X}, Z={Z}, Direction={Direction}");
+            Console.WriteLine($"Игрок {PlayerId} сообщил свою позицию: X={Position.X}, Y = {Position.Y}, Z={Position.Z}, Direction={Direction}");
 
-            server.PlayerPositions[PlayerId] = (X, Z, Direction);
+            server.PlayerPositions[PlayerId] = (Position, Direction);
 
             // 🔥 Проверяем, прислали ли все игроки свои позиции
             if (server.PlayerPositions.Count == server.Players.Count)
             {
                 Console.WriteLine("[Server] Все игроки отправили позиции, рассылаем `GameStateCommand`.");
                 var gameStateCommand = new GameStateCommand(
-                    server.Players.Values.Select(p =>
-                        (p.Id, server.PlayerPositions[p.Id].X, server.PlayerPositions[p.Id].Z,
-                         server.PlayerPositions[p.Id].Direction)
-                    ).ToList()
+                    server.Players.Values.Select(p => 
+                    (
+                        p.Id, server.PlayerPositions[p.Id].Position, 
+                        server.PlayerPositions[p.Id].Direction
+                    )).ToList()
                 );
-                await server.Broadcast(gameStateCommand.ToBytes());
+                await server.BroadcastAsync(gameStateCommand.ToBytes());
             }
         }
     }

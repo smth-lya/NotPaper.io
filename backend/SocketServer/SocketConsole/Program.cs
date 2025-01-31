@@ -1,9 +1,20 @@
-﻿namespace SocketConsole;
+﻿using GameShared;
+using GameShared.Commands.ClientToServer;
+
+namespace SocketConsole;
 
 class Program
 {
-    static void Main(string[] args)
+    static async Task Main(string[] args)
     {
-        Console.WriteLine("Hello, World!");
+        var server = new PaperServer(6677, 4, new List<Func<ClientToServerCommand>>
+        {
+            () => new JoinCommand(),
+            () => new MoveCommand(),
+            () => new ExitCommand(),
+            () => new SendPositionCommand(),
+        });
+
+        await server.StartAsync();
     }
 }

@@ -1,22 +1,17 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Threading.Tasks;
 using GameShared.Entity;
-using GameShared.Interfaces;
 
 namespace GameShared.Commands.ServerToClient
 {
-    public class WelcomeCommand : IServerToClientCommandHandler
+    /// <summary>
+    /// Команда приветствия нового игрока, содержащая его ID, позицию и направление.
+    /// </summary>
+    public sealed class WelcomeCommand : ServerToClientCommand
     {
-        public ServerToClientEvent CommandType => ServerToClientEvent.WELCOME;
-        public int PacketSize => 17; // 1 байт - команда, 4 байта - PlayerId, 4 - X, 4 - Z, 4 - DirX, 4 - DirZ
-
-        public int PlayerId { get; private set; }
-        public float X { get; private set; }
-        public float Z { get; private set; }
-        public Vector2 Direction { get; private set; }
-
-        public static Dictionary<string, int> FieldOffsets { get; protected set; } = new()
+        private static readonly Dictionary<string, int> FieldOffsets = new()
         {
             { "PlayerId", 1 },
             { "X", 5 },
@@ -25,45 +20,78 @@ namespace GameShared.Commands.ServerToClient
             { "DirZ", 17 }
         };
 
-        public WelcomeCommand() { }
+        public override ServerToClientEvent CommandType => ServerToClientEvent.WELCOME;
+        public override int PacketSize => sizeof(byte) + sizeof(int) + sizeof(float) * 4; 
 
-        public WelcomeCommand(int playerId, float x, float z, Vector2 direction)
+        public int PlayerId { get; }
+     
+        public Vector3 Position { get; private set; }
+        public Vector3 Direction { get; private set; }
+
+
+        /// <summary>
+        /// Создает новый экземпляр команды Welcome.
+        /// </summary>
+        public WelcomeCommand(int playerId, Vector3 position, Vector3 direction)
         {
             PlayerId = playerId;
-            X = x;
-            Z = z;
             Direction = direction;
         }
 
-        public void ParseFromBytes(byte[] data)
+        /// <summary>
+        /// Десериализует команду из массива байтов.
+        /// </summary>
+        public override void ParseFromBytes(byte[] data)
         {
-            PlayerId = BitConverter.ToInt32(data, FieldOffsets["PlayerId"]);
-            X = BitConverter.ToSingle(data, FieldOffsets["X"]);
-            Z = BitConverter.ToSingle(data, FieldOffsets["Z"]);
-            float dirX = BitConverter.ToSingle(data, FieldOffsets["DirX"]);
-            float dirZ = BitConverter.ToSingle(data, FieldOffsets["DirZ"]);
-            Direction = new Vector2(dirX, dirZ);
+            int playerId = BitConverter.ToInt32(data, FieldOffsets["PlayerId"]);
+
+            Position = new Vector3()
+            {
+                X = BitConverter.ToSingle(data, FieldOffsets["X"]),
+                Z = BitConverter.ToSingle(data, FieldOffsets["Z"])
+            };
+
+            Direction = new Vector3()
+            {
+                X = BitConverter.ToSingle(data, FieldOffsets["DirX"]),
+                Z = BitConverter.ToSingle(data, FieldOffsets["DirZ"])
+            };
         }
 
-        public byte[] ToBytes()
+        /// <summary>
+        /// Сериализует команду в массив байтов.
+        /// </summary>
+        public override byte[] ToBytes()
         {
             byte[] result = new byte[PacketSize];
             result[0] = (byte)CommandType;
+            
             BitConverter.GetBytes(PlayerId).CopyTo(result, FieldOffsets["PlayerId"]);
-            BitConverter.GetBytes(X).CopyTo(result, FieldOffsets["X"]);
-            BitConverter.GetBytes(Z).CopyTo(result, FieldOffsets["Z"]);
+            
+            BitConverter.GetBytes(Position.X).CopyTo(result, FieldOffsets["X"]);
+            BitConverter.GetBytes(Position.Z).CopyTo(result, FieldOffsets["Z"]);
+            
             BitConverter.GetBytes(Direction.X).CopyTo(result, FieldOffsets["DirX"]);
             BitConverter.GetBytes(Direction.Y).CopyTo(result, FieldOffsets["DirZ"]);
+         
             return result;
         }
 
-        public async Task Execute(PaperClient client)
+        /// <summary>
+        /// Выполняет команду на клиенте, устанавливая параметры игрока.
+        /// </summary>
+        public override Task ExecuteAsync(PaperClient client)
         {
-            Console.WriteLine($"[Client] WELCOME. PlayerId={PlayerId}, X={X}, Z={Z}, Direction={Direction}");
+            Console.WriteLine($"[Client] WELCOME. PlayerId={PlayerId}, X={Position.X}, Y = {Position.Y}, Z={Position.Y}, Direction={Direction}");
 
-            // Устанавливаем начальные параметры игрока
-            client.PlayerId = PlayerId;
-            client.PlayerData = new PlayerData { X = X, Z = Z, Direction = Direction };
+            client.Context = new BasePlayer 
+            { 
+                Id = PlayerId,
+                Position = Position, 
+                Direction = Direction 
+            };
+
+            return Task.CompletedTask;
         }
     }
 }
