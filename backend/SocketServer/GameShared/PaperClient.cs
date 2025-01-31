@@ -75,7 +75,7 @@ namespace GameShared
                     int receivedBytes = await _socket.ReceiveAsync(new ArraySegment<byte>(buffer), SocketFlags.None);
                     if (receivedBytes > 0)
                     {
-                        HandleServerResponse(buffer, receivedBytes);
+                        _ = Task.Run(() => HandleServerResponse(buffer, receivedBytes));
                     }
                 }
             }
@@ -91,7 +91,7 @@ namespace GameShared
             await _socket.SendAsync(new ArraySegment<byte>(packet), SocketFlags.None);
         }
 
-        private void HandleServerResponse(byte[] data, int length)
+        private async Task HandleServerResponse(byte[] data, int length)
         {
             ServerToClientEvent commandType = (ServerToClientEvent)data[0];
 

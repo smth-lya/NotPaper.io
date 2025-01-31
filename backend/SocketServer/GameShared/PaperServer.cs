@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using System.Numerics;
 using System.Threading.Tasks;
 using GameServer;
 using GameShared.Interfaces;
@@ -18,7 +19,7 @@ namespace GameShared
         // Здесь будут храниться команды, которые сервер может обработать
         private readonly ServerCommandFactory _commandFactory; // Фабрика команд
         public readonly ConcurrentDictionary<int, Player> Players = new();
-        public Dictionary<int, (float X, float Y)> PlayerPositions { get; private set; } = new();
+        public Dictionary<int, (float X, float Z, Vector2 Direction)> PlayerPositions { get; private set; } = new();
 
         private readonly object _lock = new();
 

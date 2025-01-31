@@ -22,7 +22,7 @@ namespace GameShared.Commands.ServerToClient
             Console.WriteLine($"[Client] Сервер запросил позиции. Отправляем `SendPositionCommand`...");
 
             // 🔥 Клиент отправляет свою позицию
-            var sendPositionCommand = new SendPositionCommand(client.PlayerId, client.PositionX, client.PositionY);
+            var sendPositionCommand = new SendPositionCommand(client.PlayerId, client.PlayerData.X, client.PlayerData.Z, client.PlayerData.Direction);
             await client.SendCommand(sendPositionCommand);
         }
     }
