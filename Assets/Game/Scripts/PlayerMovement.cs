@@ -18,19 +18,25 @@ public class PlayerMovement : MonoBehaviour
 
     private bool _isOnTerritory = false;
 
+    [SerializeField] private bool _isLocalPlayer;
+
+    public void SetMoveDirection(Vector3 moveDirection)
+    {
+        _moveDirection = moveDirection;
+    }
+
     private void Awake()
     {
         _rb = GetComponent<Rigidbody>();
         _camera = Camera.main;
         _trailDrawer = GetComponent<TrailDrawer>();
-        _collisionChecker = FindObjectOfType<CollisionChecker>();
-        _territory = FindObjectOfType<Territory>();
+        _collisionChecker = FindAnyObjectByType<CollisionChecker>();
+        _territory = FindAnyObjectByType<Territory>();
     }
 
     private void Update()
     {
-        // Получаем направление движения с помощью мыши
-        if (Physics.Raycast(_camera.ScreenPointToRay(Input.mousePosition), out var hit, 10000, _pointTargetLayer))
+        if (_isLocalPlayer && Physics.Raycast(_camera.ScreenPointToRay(Input.mousePosition), out var hit, 10000, _pointTargetLayer))
         {
             _moveDirection = (hit.point - transform.position).normalized;
             _moveDirection.y = 0;
@@ -54,14 +60,12 @@ public class PlayerMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
-        // Двигаем игрока
         var movePosition = transform.position + _moveDirection * _movementSpeed * Time.fixedDeltaTime;
         var moveRotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(_moveDirection), _rotationSpeed * Time.fixedDeltaTime);
 
         _rb.MovePosition(movePosition);
         _rb.MoveRotation(moveRotation);
 
-        // Рисуем след только если игрок не на своей территории
         if (!_isOnTerritory)
         {
             _trailDrawer.AddPoint(transform.position);

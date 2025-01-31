@@ -6,9 +6,14 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using GameShared.Commands.ClientToServer;
+using GameShared.Entity;
 using GameShared.Factories;
 using GameShared.Interfaces;
-
+public class PlayerData
+{
+    public float X { get; set; }
+    public float Z { get; set; }
+}
 namespace GameShared
 {
     public class PaperClient
@@ -20,17 +25,18 @@ namespace GameShared
         // Здесь будут храниться команды, которые клиент может обработать
         private readonly ClientCommandFactory _commandFactory;
         private bool _isRunning;
+        public PlayerData PlayerData { get; set; }
 
         // Событие для Unity
         public event Action<ServerToClientEvent, IServerToClientCommandHandler>? OnCommandReceived;
-        public int PlayerId { get;  set; } // Теперь у клиента есть `PlayerId`
+        public int PlayerId { get; set; } // Теперь у клиента есть `PlayerId`
 
         public PaperClient(IPAddress serverIp, int serverPort, IEnumerable<Func<IServerToClientCommandHandler>> commandFactories)
         {
             _serverIp = serverIp;
             _serverPort = serverPort;
             _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            _serverEP = new IPEndPoint(_serverIp, _serverPort);
+            _serverEP = new IPEndPoint(serverIp, _serverPort);
             _commandFactory = new ClientCommandFactory(commandFactories);
         }
 
@@ -39,23 +45,22 @@ namespace GameShared
             try
             {
                 await _socket.ConnectAsync(_serverEP);
-                UnityEngine.Debug.Log($"[Client] Подключен к серверу {_serverIp}:{_serverPort}");
+                Console.WriteLine($"[Client] Подключен к серверу {_serverIp}:{_serverPort}");
 
                 await SendJoinRequest();
 
                 _isRunning = true;
-                //_ = Task.Run(ListenToServer);
                 await ListenToServer();
             }
             catch (Exception ex)
             {
-                UnityEngine.Debug.Log($"Ошибка при подключении: {ex.Message}");
+                Console.WriteLine($"Ошибка при подключении: {ex.Message}");
             }
         }
 
         private async Task SendJoinRequest()
         {
-            UnityEngine.Debug.Log("[Client] Отправка запроса на вход в лобби...");
+            Console.WriteLine("[Client] Отправка запроса на вход в лобби...");
 
             // Создаём бинарную команду `JoinCommand`
             var joinCommand = new JoinCommand();
@@ -80,8 +85,14 @@ namespace GameShared
             }
             catch (Exception ex)
             {
-                UnityEngine.Debug.Log($"Ошибка при получении данных: {ex.Message}");
+                Console.WriteLine($"Ошибка при получении данных: {ex.Message}");
             }
+        }
+
+        public async Task SendCommand(IClientToServerCommandHandler command)
+        {
+            byte[] packet = command.ToBytes();
+            await _socket.SendAsync(new ArraySegment<byte>(packet), SocketFlags.None);
         }
 
         private void HandleServerResponse(byte[] data, int length)
@@ -92,16 +103,16 @@ namespace GameShared
             command?.Execute(this);
             if (command != null)
             {
-                UnityEngine.Debug.Log($"Получено сообщение: {command.CommandType}");
+                Console.WriteLine($"Получено сообщение: {command.CommandType}");
 
                 // Вызываем событие для Unity
                 OnCommandReceived?.Invoke(commandType, command);
             }
         }
-        
+
         public async Task ChangeDirection(int direction)
         {
-            UnityEngine.Debug.Log($"[Client] Игрок {PlayerId} сменил направление на {direction}");
+            Console.WriteLine($"[Client] Игрок {PlayerId} сменил направление на {direction}");
 
             var moveCommand = new MoveCommand(PlayerId, direction);
             byte[] movePacket = moveCommand.ToBytes();
@@ -111,9 +122,12 @@ namespace GameShared
 
         public async Task Exit()
         {
-            UnityEngine.Debug.Log("[Client] Отправка запроса на выход...");
-            byte[] exitPacket = Encoding.UTF8.GetBytes("EXIT|Player1");
-            await _socket.SendAsync(new ArraySegment<byte>(exitPacket), SocketFlags.None);
+            Console.WriteLine($"[Client] Игрок {PlayerId} отправляет запрос на выход...");
+
+            // Создаём команду `ExitCommand`
+            var exitCommand = new ExitCommand(PlayerId);
+            await SendCommand(exitCommand);
+
             _isRunning = false;
             _socket.Close();
         }

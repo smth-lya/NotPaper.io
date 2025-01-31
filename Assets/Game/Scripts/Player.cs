@@ -8,11 +8,13 @@ using GameShared.Commands.ServerToClient;
 
 public class Player : MonoBehaviour
 {
-    [SerializeField] private GameObject _playerBotPrefab;
+    [SerializeField] private PlayerMovement _playerBotPrefab;
 
     private PlayerMovement _movement;
     private PlayerTrail _trail;
     private PaperClient _client;
+
+    private List<PlayerMovement> _players = new();
 
 
     private async void Awake()
@@ -43,8 +45,31 @@ public class Player : MonoBehaviour
         if (arg2 is PlayerJoinCommand joinCommand)
         {
             var position = UnityEngine.Random.insideUnitCircle;
+                
 
-            Instantiate(_playerBotPrefab, new Vector3(position.x, 0, position.y), Quaternion.identity);
+            //Instantiate(_playerBotPrefab.gameObject, new Vector3(position.x, 0, position.y), Quaternion.identity);
+        }
+    }
+    
+    private void SpawnPlayers(List<Vector3> positions)
+    {
+        _players.Clear();
+
+        for (int i = 0; i < positions.Count; i++)
+        {
+            _players.Add(Instantiate(_playerBotPrefab, new Vector3(positions[i].x, 0, positions[i].z), Quaternion.identity));
+        }
+    }
+
+
+    private void SetToPlayersVelicity(List<Vector3> directions)
+    {
+        if (_players.Count != directions.Count)
+            throw new Exception();
+
+        for (int i = 0; i < directions.Count;i++)
+        {
+            _players[i].SetMoveDirection(directions[i]);
         }
     }
 
