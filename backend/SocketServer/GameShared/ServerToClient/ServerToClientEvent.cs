@@ -10,5 +10,6 @@ public enum ServerToClientEvent: byte
     GAME_STATE,          // Полное обновление карты
     SCORE_UPDATE,        // Обновление очков игрока
     VICTORY,             // Кто-то выиграл
-    PING_RESPONSE        // Ответ на пинг клиента
+    PING_RESPONSE,        // Ответ на пинг клиента
+    REQUEST_POSITIONS
 }

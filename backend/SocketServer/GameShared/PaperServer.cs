@@ -18,6 +18,8 @@ namespace GameShared
         // Здесь будут храниться команды, которые сервер может обработать
         private readonly ServerCommandFactory _commandFactory; // Фабрика команд
         public readonly ConcurrentDictionary<int, Player> Players = new();
+        public Dictionary<int, (float X, float Y)> PlayerPositions { get; private set; } = new();
+
         private readonly object _lock = new();
 
         public PaperServer(int port, int maxPlayers, IEnumerable<Func<IClientToServerCommandHandler>> commandFactories)

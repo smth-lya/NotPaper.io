@@ -30,7 +30,7 @@ namespace GameShared
             _serverIp = serverIp;
             _serverPort = serverPort;
             _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            _serverEP = new IPEndPoint(_serverIp, _serverPort);
+            _serverEP = new IPEndPoint(serverIp, _serverPort);
             _commandFactory = new ClientCommandFactory(commandFactories);
         }
 
@@ -82,6 +82,12 @@ namespace GameShared
                 Console.WriteLine($"Ошибка при получении данных: {ex.Message}");
             }
         }
+        
+        public async Task SendCommand(IClientToServerCommandHandler command)
+        {
+            byte[] packet = command.ToBytes();
+            await _socket.SendAsync(new ArraySegment<byte>(packet), SocketFlags.None);
+        }
 
         private void HandleServerResponse(byte[] data, int length)
         {
@@ -110,9 +116,12 @@ namespace GameShared
 
         public async Task Exit()
         {
-            Console.WriteLine("[Client] Отправка запроса на выход...");
-            byte[] exitPacket = Encoding.UTF8.GetBytes("EXIT|Player1");
-            await _socket.SendAsync(new ArraySegment<byte>(exitPacket), SocketFlags.None);
+            Console.WriteLine($"[Client] Игрок {PlayerId} отправляет запрос на выход...");
+
+            // Создаём команду `ExitCommand`
+            var exitCommand = new ExitCommand(PlayerId);
+            await SendCommand(exitCommand);
+
             _isRunning = false;
             _socket.Close();
         }
