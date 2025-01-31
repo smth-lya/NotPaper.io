@@ -37,19 +37,19 @@ public class PlayerMovement : MonoBehaviour
             _pointMarker.position = hit.point;
         }
 
-        // Проверка на вход в территорию
-        if (_collisionChecker.CheckTerritoryCollision(transform.position))
-        {
-            if (!_isOnTerritory)
-            {
-                _isOnTerritory = true;
-                CaptureTerritory();
-            }
-        }
-        else
-        {
-            _isOnTerritory = false;
-        }
+        //// Проверка на вход в территорию
+        //if (_collisionChecker.CheckTerritoryCollision(transform.position))
+        //{
+        //    if (!_isOnTerritory)
+        //    {
+        //        _isOnTerritory = true;
+        //        CaptureTerritory();
+        //    }
+        //}
+        //else
+        //{
+        //    _isOnTerritory = false;
+        //}
     }
 
     private void FixedUpdate()

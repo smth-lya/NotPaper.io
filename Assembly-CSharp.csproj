@@ -75,6 +75,9 @@
     <Compile Include="Assets\Game\Scripts\Player.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\GameShared.dll" />
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="UnityEngine">
       <HintPath>C:\Program Files\Unity\Hub\Editor\6000.0.27f1\Editor\Data\Managed\UnityEngine\UnityEngine.dll</HintPath>
       <Private>False</Private>
@@ -553,6 +556,10 @@
     </Reference>
     <Reference Include="Mono.Cecil">
       <HintPath>Library\PackageCache\com.unity.nuget.mono-cecil\Mono.Cecil.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="GameShared">
+      <HintPath>Assets\GameShared.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="netstandard">
