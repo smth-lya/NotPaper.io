@@ -47,6 +47,10 @@ namespace GameShared.Commands.ClientToServer
             // 🔥 Уведомляем всех игроков о новом подключении
             var playerJoinCommand = new PlayerJoinCommand(newPlayerId);
             await server.Broadcast(playerJoinCommand.ToBytes());
+
+            // 🔥 Запрашиваем у всех игроков их позиции
+            var requestPositionsCommand = new RequestPositionsCommand();
+            await server.Broadcast(requestPositionsCommand.ToBytes());
         }
     }
 }

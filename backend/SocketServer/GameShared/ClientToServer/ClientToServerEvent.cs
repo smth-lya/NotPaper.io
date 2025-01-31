@@ -9,5 +9,6 @@ public enum ClientToServerEvent: byte
     EXIT,               // Игрок вышел из игры
     PING,               // Проверка активности сервера
     DIRECTION_CHANGE,   // Игрок изменил направление движения
-    COLLISION_REPORT    // Клиент сообщает о коллизии // НЕ ПОНАДОБИТЬСЯ СКОРЕЕ ВСЕГО
+    COLLISION_REPORT,    // Клиент сообщает о коллизии // НЕ ПОНАДОБИТЬСЯ СКОРЕЕ ВСЕГО
+    SEND_POSITION
 }
