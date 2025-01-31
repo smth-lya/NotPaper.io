@@ -39,22 +39,23 @@ namespace GameShared
             try
             {
                 await _socket.ConnectAsync(_serverEP);
-                Console.WriteLine($"[Client] Подключен к серверу {_serverIp}:{_serverPort}");
+                UnityEngine.Debug.Log($"[Client] Подключен к серверу {_serverIp}:{_serverPort}");
 
                 await SendJoinRequest();
 
                 _isRunning = true;
-                _ = Task.Run(ListenToServer);
+                //_ = Task.Run(ListenToServer);
+                await ListenToServer();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка при подключении: {ex.Message}");
+                UnityEngine.Debug.Log($"Ошибка при подключении: {ex.Message}");
             }
         }
 
         private async Task SendJoinRequest()
         {
-            Console.WriteLine("[Client] Отправка запроса на вход в лобби...");
+            UnityEngine.Debug.Log("[Client] Отправка запроса на вход в лобби...");
 
             // Создаём бинарную команду `JoinCommand`
             var joinCommand = new JoinCommand();
@@ -79,7 +80,7 @@ namespace GameShared
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка при получении данных: {ex.Message}");
+                UnityEngine.Debug.Log($"Ошибка при получении данных: {ex.Message}");
             }
         }
 
@@ -88,9 +89,10 @@ namespace GameShared
             ServerToClientEvent commandType = (ServerToClientEvent)data[0];
 
             IServerToClientCommandHandler? command = _commandFactory.ParseCommand(data, this);
+            command?.Execute(this);
             if (command != null)
             {
-                Console.WriteLine($"Получено сообщение: {command.CommandType}");
+                UnityEngine.Debug.Log($"Получено сообщение: {command.CommandType}");
 
                 // Вызываем событие для Unity
                 OnCommandReceived?.Invoke(commandType, command);
@@ -99,7 +101,7 @@ namespace GameShared
         
         public async Task ChangeDirection(int direction)
         {
-            Console.WriteLine($"[Client] Игрок {PlayerId} сменил направление на {direction}");
+            UnityEngine.Debug.Log($"[Client] Игрок {PlayerId} сменил направление на {direction}");
 
             var moveCommand = new MoveCommand(PlayerId, direction);
             byte[] movePacket = moveCommand.ToBytes();
@@ -109,7 +111,7 @@ namespace GameShared
 
         public async Task Exit()
         {
-            Console.WriteLine("[Client] Отправка запроса на выход...");
+            UnityEngine.Debug.Log("[Client] Отправка запроса на выход...");
             byte[] exitPacket = Encoding.UTF8.GetBytes("EXIT|Player1");
             await _socket.SendAsync(new ArraySegment<byte>(exitPacket), SocketFlags.None);
             _isRunning = false;

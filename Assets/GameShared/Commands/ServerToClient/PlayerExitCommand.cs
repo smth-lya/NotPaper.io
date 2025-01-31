@@ -40,7 +40,7 @@ namespace GameShared.Commands.ServerToClient
 
         public async Task Execute(PaperClient client)
         {
-            Console.WriteLine($"Игрок {PlayerId} покинул игру!");
+            UnityEngine.Debug.Log($"Игрок {PlayerId} покинул игру!");
             // В Unity можно обновить список игроков
         }
     }

@@ -46,7 +46,7 @@ namespace GameShared.Commands.ClientToServer
 
         public async Task Execute(PaperServer server, Socket clientSocket)
         {
-            Console.WriteLine($"Игрок {PlayerId} сменил направление на {Direction}");
+            UnityEngine.Debug.Log($"Игрок {PlayerId} сменил направление на {Direction}");
 
             if (server.Players.TryGetValue(PlayerId, out var player))
             {

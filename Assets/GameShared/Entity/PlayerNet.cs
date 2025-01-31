@@ -3,7 +3,7 @@ using System.Net.Sockets;
 namespace GameShared.Entity
 {
 
-    public class Player
+    public class PlayerNet
     {
         public int Id { get; }
         public Socket Socket { get; }
@@ -11,7 +11,7 @@ namespace GameShared.Entity
         public int Y { get; set; }
         public int CurrentDirection { get; set; }
 
-        public Player(int id, Socket socket)
+        public PlayerNet(int id, Socket socket)
         {
             Id = id;
             Socket = socket;

@@ -61,18 +61,34 @@
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\6000.0.27f1\Editor\Data\Tools\Unity.SourceGenerators\Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\GameShared\Commands\ServerToClient\WelcomeCommand.cs" />
     <Compile Include="Assets\Game\Scripts\TerritoryManager.cs" />
     <Compile Include="Assets\Game\Scripts\CollisionChecker.cs" />
+    <Compile Include="Assets\GameShared\Commands\ServerToClient\PlayerExitCommand.cs" />
     <Compile Include="Assets\Game\Scripts\Territory.cs" />
     <Compile Include="Assets\Game\Scripts\TerritoryRenderer.cs" />
     <Compile Include="Assets\Game\Scripts\TrailDrawer.cs" />
+    <Compile Include="Assets\GameShared\Entity\PlayerNet.cs" />
+    <Compile Include="Assets\GameShared\Factories\ClientCommandFactory.cs" />
+    <Compile Include="Assets\GameShared\ClientToServer\ClientToServerEvent.cs" />
     <Compile Include="Assets\Game\Scripts\Triangulator.cs" />
+    <Compile Include="Assets\GameShared\PaperServer.cs" />
+    <Compile Include="Assets\GameShared\Commands\ClientToServer\ExitCommand.cs" />
     <Compile Include="Assets\Game\Scripts\LineDrawer.cs" />
     <Compile Include="Assets\Game\Scripts\PlayerTrail.cs" />
+    <Compile Include="Assets\GameShared\Commands\ClientToServer\JoinCommand.cs" />
+    <Compile Include="Assets\GameShared\Interfaces\IServerToClientCommandHandler.cs" />
     <Compile Include="Assets\Game\Scripts\BotController.cs" />
+    <Compile Include="Assets\GameShared\Factories\ServerCommandFactory.cs" />
     <Compile Include="Assets\Game\Scripts\DelaunayTriangulation.cs" />
+    <Compile Include="Assets\GameShared\PaperClient.cs" />
+    <Compile Include="Assets\GameShared\Interfaces\IClientToServerCommandHandler.cs" />
     <Compile Include="Assets\Game\Scripts\PlayerMovement.cs" />
+    <Compile Include="Assets\GameShared\Commands\ClientToServer\MoveCommand.cs" />
+    <Compile Include="Assets\GameShared\Commands\ServerToClient\PlayerJoinCommand.cs" />
     <Compile Include="Assets\Game\Scripts\Player.cs" />
+    <Compile Include="Assets\GameShared\ServerToClient\ServerToClientEvent.cs" />
+    <Compile Include="Assets\GameShared\Commands\ServerToClient\PlayerMoveCommand.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\GameShared.dll" />
@@ -550,16 +566,16 @@
       <HintPath>Library\PackageCache\com.unity.ext.nunit\net40\unity-custom\nunit.framework.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="GameShared">
+      <HintPath>Assets\GameShared.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Unity.VisualScripting.Antlr3.Runtime">
       <HintPath>Library\PackageCache\com.unity.visualscripting\Runtime\VisualScripting.Flow\Dependencies\NCalc\Unity.VisualScripting.Antlr3.Runtime.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Mono.Cecil">
       <HintPath>Library\PackageCache\com.unity.nuget.mono-cecil\Mono.Cecil.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="GameShared">
-      <HintPath>Assets\GameShared.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="netstandard">

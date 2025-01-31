@@ -27,7 +27,7 @@ namespace GameShared.Factories
         {
             if (data.Length == 0)
             {
-                Console.WriteLine("Ошибка: пустой пакет данных.");
+                UnityEngine.Debug.Log("Ошибка: пустой пакет данных.");
                 return null;
             }
 
@@ -41,7 +41,7 @@ namespace GameShared.Factories
                 return command;
             }
 
-            Console.WriteLine($"Ошибка: нераспознанная команда {type}");
+            UnityEngine.Debug.Log($"Ошибка: нераспознанная команда {type}");
             return null;
         }
     }

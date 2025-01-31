@@ -8,7 +8,7 @@ class Program
 {
     static async Task Main(string[] args)
     {
-        var server = new PaperServer(5555, 4, new List<Func<IClientToServerCommandHandler>>()
+        var server = new PaperServer(6677, 4, new List<Func<IClientToServerCommandHandler>>()
         {
             () => new ExitCommand(),
             () => new JoinCommand(),

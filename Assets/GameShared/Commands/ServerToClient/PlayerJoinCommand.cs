@@ -40,7 +40,7 @@ namespace GameShared.Commands.ServerToClient
 
         public async Task Execute(PaperClient client)
         {
-            Console.WriteLine($"Игрок {PlayerId} присоединился к игре!");
+            UnityEngine.Debug.Log($"Игрок {PlayerId} присоединился к игре!");
 
             // 🔥 Здесь можно обновить список игроков в Unity
         }

@@ -42,11 +42,11 @@ namespace GameShared.Commands.ClientToServer
         
         public async Task Execute(PaperServer server, Socket clientSocket)
         {
-            Console.WriteLine($"Игрок {PlayerId} выходит из игры...");
+            UnityEngine.Debug.Log($"Игрок {PlayerId} выходит из игры...");
 
             if (server.Players.TryRemove(PlayerId, out _))
             {
-                Console.WriteLine($"Игрок {PlayerId} удалён.");
+                UnityEngine.Debug.Log($"Игрок {PlayerId} удалён.");
 
                 // Уведомляем всех игроков о выходе
                 var playerExitCommand = new PlayerExitCommand(PlayerId);
@@ -54,7 +54,7 @@ namespace GameShared.Commands.ClientToServer
             }
             else
             {
-                Console.WriteLine($"Ошибка: Игрок {PlayerId} не найден.");
+                UnityEngine.Debug.Log($"Ошибка: Игрок {PlayerId} не найден.");
             }
 
             clientSocket.Close();

@@ -26,11 +26,11 @@ namespace GameShared.Commands.ClientToServer
 
         public async Task Execute(PaperServer server, Socket clientSocket)
         {
-            Console.WriteLine("Игрок хочет присоединиться...");
+            UnityEngine.Debug.Log("Игрок хочет присоединиться...");
 
             if (server.Players.Count >= server.MaxPlayers)
             {
-                Console.WriteLine("Сервер заполнен. Отказано.");
+                UnityEngine.Debug.Log("Сервер заполнен. Отказано.");
                 return;
             }
 
@@ -38,10 +38,10 @@ namespace GameShared.Commands.ClientToServer
             int newPlayerId = server.GeneratePlayerId();
 
             // Добавляем игрока
-            var player = new Player(newPlayerId, clientSocket);
+            var player = new PlayerNet(newPlayerId, clientSocket);
             server.Players.TryAdd(newPlayerId, player);
 
-            Console.WriteLine($"Игрок {newPlayerId} подключен!");
+            UnityEngine.Debug.Log($"Игрок {newPlayerId} подключен!");
 
             // 🔥 Отправляем `WELCOME` с `PlayerId`
             var welcomeCommand = new WelcomeCommand(newPlayerId);

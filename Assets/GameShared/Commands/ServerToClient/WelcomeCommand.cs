@@ -40,7 +40,7 @@ namespace GameShared.Commands.ServerToClient
 
         public async Task Execute(PaperClient client)
         {
-            Console.WriteLine($"[Client] Получен `WELCOME`, мой PlayerId = {PlayerId}");
+            UnityEngine.Debug.Log($"[Client] Получен `WELCOME`, мой PlayerId = {PlayerId}");
             client.PlayerId = PlayerId; // Теперь клиент сохраняет PlayerId
         }
     }

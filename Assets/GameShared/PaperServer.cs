@@ -8,6 +8,8 @@ using GameServer;
 using GameShared.Interfaces;
 using GameShared.Entity;
 using System.Linq;
+using UnityEngine;
+using System.Numerics;
 
 namespace GameShared
 {
@@ -18,7 +20,7 @@ namespace GameShared
         private readonly Socket _serverSocket;
         // Здесь будут храниться команды, которые сервер может обработать
         private readonly ServerCommandFactory _commandFactory; // Фабрика команд
-        public readonly ConcurrentDictionary<int, Player> Players = new();
+        public readonly ConcurrentDictionary<int, PlayerNet> Players = new();
         private readonly object _lock = new();
 
         public PaperServer(int port, int maxPlayers, IEnumerable<Func<IClientToServerCommandHandler>> commandFactories)
@@ -33,7 +35,7 @@ namespace GameShared
         {
             _serverSocket.Bind(new IPEndPoint(IPAddress.Any, _port));
             _serverSocket.Listen(MaxPlayers);
-            Console.WriteLine($"Сервер запущен на порту {_port}");
+            UnityEngine.Debug.Log($"Сервер запущен на порту {_port}");
             await AcceptClients();
         }
 
@@ -42,7 +44,7 @@ namespace GameShared
             while (true)
             {
                 Socket clientSocket = await _serverSocket.AcceptAsync();
-                Console.WriteLine($"Новый игрок подключился: {clientSocket.RemoteEndPoint}");
+                UnityEngine.Debug.Log($"Новый игрок подключился: {clientSocket.RemoteEndPoint}");
                 _ = Task.Run(() => HandleClient(clientSocket));
             }
         }
@@ -76,16 +78,18 @@ namespace GameShared
 
                     IClientToServerCommandHandler? command =
                         _commandFactory.ParseCommand(fullMessage, clientSocket, this);
-                    if (command != null)
-                    {
-                        Console.WriteLine($"Обработана команда: {command.CommandType}");
-                        await command.Execute(this, clientSocket);
-                    }
+                    //if (command != null)
+                    //{
+                    //    UnityEngine.Debug.Log($"Обработана команда: {command.CommandType}");
+                    //    await command.Execute(this, clientSocket);
+                    //}
+                    await command?.Execute(this, clientSocket)!;
+                    UnityEngine.Debug.Log($"Обработана команда: {command.CommandType}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка в HandleClient: {ex.Message}");
+                UnityEngine.Debug.Log($"Ошибка в HandleClient: {ex.Message}");
             }
             finally
             {
@@ -98,7 +102,7 @@ namespace GameShared
             int newId;
             do
             {
-                newId = new Random().Next(1, 10000);
+                newId = new System.Random().Next(1, 10000);
             } while (Players.ContainsKey(newId)); // Генерируем, пока ID уникален
 
             return newId;
@@ -108,15 +112,15 @@ namespace GameShared
         {
             List<Task> sendTasks = new List<Task>();
 
-            foreach (var player in Players.Values)
+            foreach (var PlayerNet in Players.Values)
             {
                 try
                 {
-                    sendTasks.Add(player.Socket.SendAsync(new ArraySegment<byte>(data), SocketFlags.None));
+                    sendTasks.Add(PlayerNet.Socket.SendAsync(new ArraySegment<byte>(data), SocketFlags.None));
                 }
                 catch
                 {
-                    Console.WriteLine($"Ошибка отправки данных игроку {player.Id}");
+                    UnityEngine.Debug.Log($"Ошибка отправки данных игроку {PlayerNet.Id}");
                 }
             }
 
@@ -124,19 +128,19 @@ namespace GameShared
         }
         
         
-        public async Task Broadcast(byte[] data, Func<Player, bool> predicate)
+        public async Task Broadcast(byte[] data, Func<PlayerNet, bool> predicate)
         {
             List<Task> sendTasks = new List<Task>();
 
-            foreach (var player in Players.Values.Where(predicate))
+            foreach (var Player in Players.Values.Where(predicate))
             {
                 try
                 {
-                    sendTasks.Add(player.Socket.SendAsync(new ArraySegment<byte>(data), SocketFlags.None));
+                    sendTasks.Add(Player.Socket.SendAsync(new ArraySegment<byte>(data), SocketFlags.None));
                 }
                 catch
                 {
-                    Console.WriteLine($"Ошибка отправки данных игроку {player.Id}");
+                    UnityEngine.Debug.Log($"Ошибка отправки данных игроку {Player.Id}");
                 }
             }
 
