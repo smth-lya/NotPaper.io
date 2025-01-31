@@ -1,16 +1,15 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
+using System.Collections.Generic;
 
 public class TerritoryRenderer : MonoBehaviour
 {
-    [SerializeField] private Material _fillMaterial;
+    public Material fillMaterial;
+    private RenderTexture renderTexture;
 
-    private RenderTexture _renderTexture;
-
-    private void Awake()
+    void Start()
     {
-        _renderTexture = new RenderTexture(1024, 1024, 0, RenderTextureFormat.ARGB32);
-        _fillMaterial.SetTexture("_MainTex", _renderTexture);
+        renderTexture = new RenderTexture(1024, 1024, 0, RenderTextureFormat.ARGB32);
+        fillMaterial.SetTexture("_MainTex", renderTexture);
     }
 
     public void UpdateTexture(List<Vector3> points)
@@ -23,16 +22,16 @@ public class TerritoryRenderer : MonoBehaviour
         for (int i = 0; i < pixels.Length; i++)
             pixels[i] = Color.clear;
 
-        foreach (Vector2 point in points)
+        foreach (Vector3 point in points)
         {
             int x = Mathf.Clamp((int)(point.x * 1024), 0, 1023);
-            int y = Mathf.Clamp((int)(point.y * 1024), 0, 1023);
-            pixels[y * 1024 + x] = Color.red;
+            int z = Mathf.Clamp((int)(point.z * 1024), 0, 1023);
+            pixels[z * 1024 + x] = Color.red;
         }
 
         texture.SetPixels(pixels);
         texture.Apply();
-        Graphics.Blit(texture, _renderTexture);
+        Graphics.Blit(texture, renderTexture);
         Destroy(texture);
     }
 }

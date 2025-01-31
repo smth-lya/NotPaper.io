@@ -62,13 +62,17 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Game\Scripts\TerritoryManager.cs" />
+    <Compile Include="Assets\Game\Scripts\CollisionChecker.cs" />
+    <Compile Include="Assets\Game\Scripts\Territory.cs" />
     <Compile Include="Assets\Game\Scripts\TerritoryRenderer.cs" />
+    <Compile Include="Assets\Game\Scripts\TrailDrawer.cs" />
+    <Compile Include="Assets\Game\Scripts\Triangulator.cs" />
+    <Compile Include="Assets\Game\Scripts\LineDrawer.cs" />
     <Compile Include="Assets\Game\Scripts\PlayerTrail.cs" />
+    <Compile Include="Assets\Game\Scripts\BotController.cs" />
+    <Compile Include="Assets\Game\Scripts\DelaunayTriangulation.cs" />
     <Compile Include="Assets\Game\Scripts\PlayerMovement.cs" />
     <Compile Include="Assets\Game\Scripts\Player.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Assets\Game\Shaders\MergePolygons.compute" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">
@@ -1097,10 +1101,6 @@
     </Reference>
     <Reference Include="Unity.RenderPipelines.Core.ShaderLibrary">
       <HintPath>Library\ScriptAssemblies\Unity.RenderPipelines.Core.ShaderLibrary.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Unity.PlasticSCM.Editor">
-      <HintPath>Library\ScriptAssemblies\Unity.PlasticSCM.Editor.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.Multiplayer.Center.Editor">

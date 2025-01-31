@@ -1,32 +1,35 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
+﻿using UnityEngine;
+using System.Collections.Generic;
 
 public class TerritoryManager : MonoBehaviour
 {
-    [SerializeField] private ComputeShader _mergeShader;
+    private Dictionary<int, List<Vector3>> playerTerritories = new();
 
-    private List<Vector3> _territoryPoints = new();
-
-    public void ExpandTerritory(List<Vector3> trailPoints)
+    public void ExpandTerritory(List<Vector3> newTrail, int playerID)
     {
-        if (trailPoints.Count < 3) return;
+        if (newTrail.Count < 3) return;
+        if (!playerTerritories.ContainsKey(playerID))
+            playerTerritories[playerID] = new List<Vector3>();
 
-        var polygonBuffer = new ComputeBuffer(_territoryPoints.Count, sizeof(float) * 2);
-        var trailBuffer = new ComputeBuffer(trailPoints.Count, sizeof(float) * 2);
+        playerTerritories[playerID].AddRange(newTrail);
+    }
 
-        polygonBuffer.SetData(_territoryPoints);
-        trailBuffer.SetData(trailPoints);
+    public bool IsPointInsideTerritory(Vector3 point, int playerID)
+    {
+        if (!playerTerritories.ContainsKey(playerID)) return false;
+        int crossings = 0;
+        List<Vector3> territoryPoints = playerTerritories[playerID];
 
-        _mergeShader.SetBuffer(0, "Polygon", polygonBuffer);
-        _mergeShader.SetBuffer(0, "Trail", trailBuffer);
-        _mergeShader.Dispatch(0, 1, 1, 1);
-
-        Vector3[] updatedTerritory = new Vector3[_territoryPoints.Count];
-        polygonBuffer.GetData(updatedTerritory);
-        _territoryPoints = updatedTerritory.ToList();
-
-        polygonBuffer.Release();
-        trailBuffer.Release();
+        for (int i = 0; i < territoryPoints.Count; i++)
+        {
+            Vector3 a = territoryPoints[i];
+            Vector3 b = territoryPoints[(i + 1) % territoryPoints.Count];
+            if (((a.z > point.z) != (b.z > point.z)) &&
+                (point.x < (b.x - a.x) * (point.z - a.z) / (b.z - a.z) + a.x))
+            {
+                crossings++;
+            }
+        }
+        return (crossings % 2) != 0;
     }
 }
