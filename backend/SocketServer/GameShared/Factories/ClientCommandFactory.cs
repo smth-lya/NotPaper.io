@@ -37,7 +37,7 @@ namespace GameShared.Factories
             {
                 var command = commandFactory();
                 command.ParseFromBytes(data);
-                command.Execute(client);
+                //command.Execute(client);
                 return command;
             }
 

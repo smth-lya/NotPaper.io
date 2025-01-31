@@ -44,7 +44,7 @@ namespace GameShared
                 await SendJoinRequest();
 
                 _isRunning = true;
-                _ = Task.Run(ListenToServer);
+                await ListenToServer();
             }
             catch (Exception ex)
             {
@@ -88,6 +88,7 @@ namespace GameShared
             ServerToClientEvent commandType = (ServerToClientEvent)data[0];
 
             IServerToClientCommandHandler? command = _commandFactory.ParseCommand(data, this);
+            command?.Execute(this);
             if (command != null)
             {
                 Console.WriteLine($"Получено сообщение: {command.CommandType}");

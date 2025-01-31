@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameClient", "GameClient\Ga
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameShared", "GameShared\GameShared.csproj", "{B367018F-2AA4-4F94-8E8C-103210B37CDC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SocketClient", "SocketClient\SocketClient.csproj", "{B3E647C0-F7FB-4E32-909B-573C9F2EFBE8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{B367018F-2AA4-4F94-8E8C-103210B37CDC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B367018F-2AA4-4F94-8E8C-103210B37CDC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B367018F-2AA4-4F94-8E8C-103210B37CDC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B3E647C0-F7FB-4E32-909B-573C9F2EFBE8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B3E647C0-F7FB-4E32-909B-573C9F2EFBE8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B3E647C0-F7FB-4E32-909B-573C9F2EFBE8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B3E647C0-F7FB-4E32-909B-573C9F2EFBE8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
