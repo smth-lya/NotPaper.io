@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using GameShared.Commands.ClientToServer;
+using GameShared.Entity;
 using GameShared.Factories;
 using GameShared.Interfaces;
 
@@ -20,6 +21,7 @@ namespace GameShared
         // Здесь будут храниться команды, которые клиент может обработать
         private readonly ClientCommandFactory _commandFactory;
         private bool _isRunning;
+        public PlayerData PlayerData { get; set; }
 
         // Событие для Unity
         public event Action<ServerToClientEvent, IServerToClientCommandHandler>? OnCommandReceived;
