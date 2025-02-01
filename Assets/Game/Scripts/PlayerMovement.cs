@@ -25,13 +25,38 @@ public class PlayerMovement : MonoBehaviour
     }
 
     public void SetMoveDirection(Vector3 direction)
-        { _moveDirection = direction; }
+    {
+        _moveDirection = direction;
+        Debug.Log(gameObject.name + " " + _moveDirection);
+    }
 
     private async void Update()
     {
-        if (_isLocalPlayer && Physics.Raycast(_camera.ScreenPointToRay(Input.mousePosition), out var hit, 10000, _pointTargetLayer))
+        //if (_isLocalPlayer && Physics.Raycast(_camera.ScreenPointToRay(Input.mousePosition), out var hit, 10000, _pointTargetLayer))
+        //{
+        //    var newDirection = (hit.point - transform.position).normalized;
+        //    newDirection.y = 0;
+
+        //    if (_moveDirection != newDirection)
+        //    {
+        //        _moveDirection = newDirection;
+
+        //        OnDirectionChanged?.Invoke(_moveDirection).ConfigureAwait(false);
+
+        //        UnityMainThreadDispatcher.Instance.Enqueue(() =>
+        //        {
+        //            _pointMarker.position = hit.point;
+        //            Debug.Log("Направление обновлено");
+        //        });
+        //    }
+        //}
+
+        if (_isLocalPlayer)
         {
-            var newDirection = (hit.point - transform.position).normalized;
+            var dirX = Input.GetAxisRaw("Horizontal");
+            var dirZ = Input.GetAxisRaw("Vertical");
+
+            var newDirection = new Vector3(dirX, 0, dirZ);
             newDirection.y = 0;
 
             if (_moveDirection != newDirection)
@@ -39,12 +64,6 @@ public class PlayerMovement : MonoBehaviour
                 _moveDirection = newDirection;
 
                 OnDirectionChanged?.Invoke(_moveDirection).ConfigureAwait(false);
-
-                UnityMainThreadDispatcher.Instance.Enqueue(() =>
-                {
-                    _pointMarker.position = hit.point;
-                    Debug.Log("Направление обновлено");
-                });
             }
         }
     }

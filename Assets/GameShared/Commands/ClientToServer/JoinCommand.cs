@@ -46,6 +46,8 @@ namespace GameShared.Commands.ClientToServer
             int newPlayerId = server.GeneratePlayerId();
             (Vector3 startPosition, Vector3 startDirection) = GenerateRandomSpawnPoint();
 
+            Debug.Log(newPlayerId + " ДОБАВЛЕН");
+
             var player = new PaperPlayer(newPlayerId, clientSocket)
             {
                 Position = startPosition,

@@ -7,6 +7,7 @@ using GameShared.Commands.ServerToClient;
 using System.Linq;
 using GameShared.Entity;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 public class Player : MonoBehaviour
 {
@@ -16,7 +17,7 @@ public class Player : MonoBehaviour
     private PlayerTrail _trail;
     private PaperClient _client;
 
-    private Dictionary<int, PlayerMovement> _players = new();
+    private ConcurrentDictionary<int, PlayerMovement> _players = new();
     private int _playerId;
 
     private async void Awake()
@@ -78,8 +79,6 @@ public class Player : MonoBehaviour
         transform.position = welcome.Position;
 
         Debug.Log(_playerId);
-
-        _players.TryAdd(_playerId, _movement);
     }
 
     private void HandlePlayerJoin(PlayerJoinCommand joinCommand)
@@ -107,18 +106,15 @@ public class Player : MonoBehaviour
         var playersToRemove = existingPlayerIds.Except(serverPlayerIds).ToList();
         foreach (var playerId in playersToRemove)
         {
-            if (playerId == _playerId)
-                continue;
-
             Destroy(_players[playerId].gameObject);
-            _players.Remove(playerId);
+            _players.Remove(playerId, out _);
         }
 
         foreach (var player in players)
         {
             Debug.Log(player.Id + " " + _playerId);
 
-            if (player.Id == _playerId)
+            if (_playerId == player.Id)
                 continue;
 
             if (_players.ContainsKey(player.Id))
@@ -135,7 +131,7 @@ public class Player : MonoBehaviour
                 {
                     var playerBot = Instantiate(_playerBotPrefab, new Vector3(player.Position.x, 0, player.Position.z), Quaternion.identity);
                     playerBot.name += player.Id;
-                    _players.Add(player.Id, playerBot);
+                    _players.TryAdd(player.Id, playerBot);
                 });
             }
         }
