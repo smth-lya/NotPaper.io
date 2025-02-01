@@ -23,7 +23,7 @@ namespace GameShared.Commands.ServerToClient
         public override ServerToClientEvent CommandType => ServerToClientEvent.WELCOME;
         public override int PacketSize => sizeof(byte) + sizeof(int) + sizeof(float) * 4; 
 
-        public int PlayerId { get; }
+        public int PlayerId { get; private set; }
      
         public Vector3 Position { get; private set; }
         public Vector3 Direction { get; private set; }
@@ -36,6 +36,7 @@ namespace GameShared.Commands.ServerToClient
         public WelcomeCommand(int playerId, Vector3 position, Vector3 direction)
         {
             PlayerId = playerId;
+            Position = position;
             Direction = direction;
         }
 
@@ -44,7 +45,7 @@ namespace GameShared.Commands.ServerToClient
         /// </summary>
         public override void ParseFromBytes(byte[] data)
         {
-            int playerId = BitConverter.ToInt32(data, FieldOffsets["PlayerId"]);
+            PlayerId = BitConverter.ToInt32(data, FieldOffsets["PlayerId"]);
 
             Position = new Vector3()
             {

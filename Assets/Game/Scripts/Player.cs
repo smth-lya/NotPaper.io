@@ -76,6 +76,10 @@ public class Player : MonoBehaviour
     {
         _playerId = welcome.PlayerId;
         transform.position = welcome.Position;
+
+        Debug.Log(_playerId);
+
+        _players.TryAdd(_playerId, _movement);
     }
 
     private void HandlePlayerJoin(PlayerJoinCommand joinCommand)
@@ -103,12 +107,20 @@ public class Player : MonoBehaviour
         var playersToRemove = existingPlayerIds.Except(serverPlayerIds).ToList();
         foreach (var playerId in playersToRemove)
         {
+            if (playerId == _playerId)
+                continue;
+
             Destroy(_players[playerId].gameObject);
             _players.Remove(playerId);
         }
 
         foreach (var player in players)
         {
+            Debug.Log(player.Id + " " + _playerId);
+
+            if (player.Id == _playerId)
+                continue;
+
             if (_players.ContainsKey(player.Id))
             {
                 // Переносим установку позиции в главный поток
@@ -122,6 +134,7 @@ public class Player : MonoBehaviour
                 UnityMainThreadDispatcher.Instance.Enqueue(() =>
                 {
                     var playerBot = Instantiate(_playerBotPrefab, new Vector3(player.Position.x, 0, player.Position.z), Quaternion.identity);
+                    playerBot.name += player.Id;
                     _players.Add(player.Id, playerBot);
                 });
             }

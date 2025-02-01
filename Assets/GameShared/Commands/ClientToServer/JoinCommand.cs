@@ -68,8 +68,8 @@ namespace GameShared.Commands.ClientToServer
         {
             Vector3 position = new Vector3()
             {
-                x = _random.Next(-20, 20),
-                z = _random.Next(-20, 20),
+                x = _random.Next(-10, 10),
+                z = _random.Next(-10, 10),
             };
 
             Vector3 direction = new Vector3()
