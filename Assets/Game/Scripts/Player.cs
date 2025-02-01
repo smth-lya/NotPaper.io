@@ -3,8 +3,10 @@ using System.Net;
 using UnityEngine;
 using GameShared;
 using System;
-using GameShared.Interfaces;
 using GameShared.Commands.ServerToClient;
+using System.Linq;
+using GameShared.Entity;
+using System.Threading.Tasks;
 
 public class Player : MonoBehaviour
 {
@@ -14,67 +16,121 @@ public class Player : MonoBehaviour
     private PlayerTrail _trail;
     private PaperClient _client;
 
-    private List<PlayerMovement> _players = new();
-
+    private Dictionary<int, PlayerMovement> _players = new();
+    private int _playerId;
 
     private async void Awake()
     {
-        _client = new PaperClient(IPAddress.Loopback, 6677, new List<Func<IServerToClientCommandHandler>>()
+        _client = new PaperClient(IPAddress.Loopback, Server.Instance.Port, new List<Func<ServerToClientCommand>>()
         {
+            () => new GameStateCommand(),
+            () => new RequestPositionsCommand(),
             () => new PlayerJoinCommand(),
             () => new PlayerMoveCommand(),
             () => new PlayerExitCommand(),
             () => new WelcomeCommand(),
         });
-        _client.OnCommandReceived += _client_OnCommandReceived;
+
+        _client.OnCommandReceived += HandleCommandReceived;
+
         try
         {
-            await _client.Start();
-
+            await _client.StartAsync();
         }
         catch (Exception ex)
         {
-            Debug.Log(ex.Message);
+            Debug.LogError($"Connection failed: {ex.Message}");
             throw;
         }
-
     }
 
-    private void _client_OnCommandReceived(ServerToClientEvent arg1, IServerToClientCommandHandler arg2)
+    private void HandleCommandReceived(ServerToClientEvent eventArgs, ServerToClientCommand command)
     {
-        if (arg2 is PlayerJoinCommand joinCommand)
+        Debug.Log(eventArgs + " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa");
+
+        switch (command)
         {
-            var position = UnityEngine.Random.insideUnitCircle;
-                
+            case WelcomeCommand welcome:
+                UnityMainThreadDispatcher.Instance.Enqueue(() => HandleWelcomeCommand(welcome));
+                break;
 
-            //Instantiate(_playerBotPrefab.gameObject, new Vector3(position.x, 0, position.y), Quaternion.identity);
-        }
-    }
-    
-    private void SpawnPlayers(List<Vector3> positions)
-    {
-        _players.Clear();
+            case PlayerJoinCommand joinCommand:
+                UnityMainThreadDispatcher.Instance.Enqueue(() => HandlePlayerJoin(joinCommand));
+                break;
 
-        for (int i = 0; i < positions.Count; i++)
-        {
-            _players.Add(Instantiate(_playerBotPrefab, new Vector3(positions[i].x, 0, positions[i].z), Quaternion.identity));
-        }
-    }
+            case GameStateCommand gameStateCommand:
+                UnityMainThreadDispatcher.Instance.Enqueue(() => HandleGameState(gameStateCommand));
+                break;
 
+            case PlayerMoveCommand moveCommand:
+                UnityMainThreadDispatcher.Instance.Enqueue(() => HandlePlayerMovement(moveCommand));
+                break;
 
-    private void SetToPlayersVelicity(List<Vector3> directions)
-    {
-        if (_players.Count != directions.Count)
-            throw new Exception();
-
-        for (int i = 0; i < directions.Count;i++)
-        {
-            _players[i].SetMoveDirection(directions[i]);
+            default:
+                Debug.LogWarning("Received unknown command.");
+                break;
         }
     }
 
-    private void Update()
+    private void HandleWelcomeCommand(WelcomeCommand welcome)
     {
-        
+        _playerId = welcome.PlayerId;
+        transform.position = welcome.Position;
+    }
+
+    private void HandlePlayerJoin(PlayerJoinCommand joinCommand)
+    {
+    }
+
+    private void HandleGameState(GameStateCommand gameStateCommand)
+    {
+        UpdateOrSpawnPlayers(gameStateCommand.Players);
+    }
+
+    private void HandlePlayerMovement(PlayerMoveCommand moveCommand)
+    {
+        if (_players.ContainsKey(moveCommand.PlayerId))
+        {
+            _players[moveCommand.PlayerId].SetMoveDirection(moveCommand.Direction);
+        }
+    }
+
+    private void UpdateOrSpawnPlayers(List<BasePlayer> players)
+    {
+        var existingPlayerIds = _players.Keys.ToHashSet();
+        var serverPlayerIds = players.Select(p => p.Id).ToHashSet();
+
+        var playersToRemove = existingPlayerIds.Except(serverPlayerIds).ToList();
+        foreach (var playerId in playersToRemove)
+        {
+            Destroy(_players[playerId].gameObject);
+            _players.Remove(playerId);
+        }
+
+        foreach (var player in players)
+        {
+            if (_players.ContainsKey(player.Id))
+            {
+                // Переносим установку позиции в главный поток
+                UnityMainThreadDispatcher.Instance.Enqueue(() =>
+                {
+                    _players[player.Id].transform.position = player.Position;
+                });
+            }
+            else
+            {
+                UnityMainThreadDispatcher.Instance.Enqueue(() =>
+                {
+                    var playerBot = Instantiate(_playerBotPrefab, new Vector3(player.Position.x, 0, player.Position.z), Quaternion.identity);
+                    _players.Add(player.Id, playerBot);
+                });
+            }
+        }
+    }
+
+    private void Start()
+    {
+        _movement = GetComponent<PlayerMovement>();
+        _movement.OnDirectionChanged += _client.ChangeDirectionAsync;
     }
 }

@@ -1,53 +1,62 @@
-using GameShared;
-using GameShared.Interfaces;
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 using System.Threading.Tasks;
 
 namespace GameShared.Commands.ServerToClient
 {
-
-    public class PlayerMoveCommand : IServerToClientCommandHandler
+    public sealed class PlayerMoveCommand : ServerToClientCommand
     {
-        public ServerToClientEvent CommandType => ServerToClientEvent.PLAYER_MOVE;
-        public int PacketSize => 6; // 1 байт - команда, 4 байта - PlayerId, 1 байт - направление
-
+        private static readonly Dictionary<string, int> _fieldOffsets = new()
+        {
+            { "PlayerId", 1 },
+            { "DirX", 5 },
+            { "DirZ", 9 }
+        };
+     
+        public override ServerToClientEvent CommandType => ServerToClientEvent.PLAYER_MOVE;
+        public override int PacketSize => sizeof(byte) + sizeof(int) + sizeof(float) * 2;
+       
         public int PlayerId { get; private set; }
-        public int Direction { get; private set; }
-
-        public static Dictionary<string, int> FieldOffsets { get; protected set; } = new()
-    {
-        { "PlayerId", 1 },
-        { "Direction", 5 }
-    };
+        public Vector3 Direction { get; private set; }
 
         public PlayerMoveCommand() { }
 
-        public PlayerMoveCommand(int playerId, int direction)
+        public PlayerMoveCommand(int playerId, Vector3 direction)
         {
             PlayerId = playerId;
             Direction = direction;
         }
 
-        public void ParseFromBytes(byte[] data)
+        public override void ParseFromBytes(byte[] data)
         {
-            PlayerId = BitConverter.ToInt32(data, FieldOffsets["PlayerId"]);
-            Direction = data[FieldOffsets["Direction"]];
+            PlayerId = BitConverter.ToInt32(data, _fieldOffsets["PlayerId"]);
+
+            Direction = new Vector3()
+            {
+                x = BitConverter.ToSingle(data, _fieldOffsets["DirX"]),
+                z = BitConverter.ToSingle(data, _fieldOffsets["DirZ"])
+            };
         }
 
-        public byte[] ToBytes()
+        public override byte[] ToBytes()
         {
             byte[] result = new byte[PacketSize];
             result[0] = (byte)CommandType;
-            BitConverter.GetBytes(PlayerId).CopyTo(result, FieldOffsets["PlayerId"]);
-            result[FieldOffsets["Direction"]] = (byte)Direction;
+
+            BitConverter.GetBytes(PlayerId).CopyTo(result, _fieldOffsets["PlayerId"]);
+            BitConverter.GetBytes(Direction.x).CopyTo(result, _fieldOffsets["DirX"]);
+            BitConverter.GetBytes(Direction.z).CopyTo(result, _fieldOffsets["DirZ"]);
+
             return result;
         }
 
-        public async Task Execute(PaperClient client)
-        {
-            UnityEngine.Debug.Log($"Игрок {PlayerId} сменил направление на {Direction}");
 
+        public override Task ExecuteAsync(PaperClient client)
+        {
+            Debug.LogWarning($"Игрок {PlayerId} сменил направление на {Direction}");
+
+            return Task.CompletedTask;
             // 🔥 Unity может подписаться на это событие и обработать его
         }
     }

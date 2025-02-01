@@ -1,63 +1,102 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using GameShared;
 using GameShared.Commands.ServerToClient;
-using GameShared.Interfaces;
+using UnityEngine;
 
 namespace GameShared.Commands.ClientToServer
 {
-    public class ExitCommand : IClientToServerCommandHandler
+    /// <summary>
+    /// Команда выхода игрока из игры.
+    /// </summary>
+    public sealed class ExitCommand : ClientToServerCommand
     {
-        public ClientToServerEvent CommandType => ClientToServerEvent.EXIT;
-        public int PacketSize => 5; // 1 байт - команда, 4 байта - PlayerId
+        private static Dictionary<string, int> _fieldOffsets = new Dictionary<string, int>()
+        {
+            { nameof(PlayerId), 1 }
+        };
+
+        public override ClientToServerEvent CommandType => ClientToServerEvent.EXIT;
+        public override int PacketSize => sizeof(byte) + sizeof(int); // 1 байт - команда, 4 байта - PlayerId
 
         public int PlayerId { get; private set; }
 
-        public static Dictionary<string, int> FieldOffsets { get; protected set; } = new()
-        {
-            { "PlayerId", 1 }
-        };
-
         public ExitCommand() { }
 
-        public ExitCommand(int playerId)
+        public ExitCommand(int playerId) : this()
         {
             PlayerId = playerId;
         }
 
-        public void ParseFromBytes(byte[] data)
+        /// <summary>
+        /// Парсит данные из массива байтов для инициализации команды.
+        /// </summary>
+        /// <param name="data">Массив байтов.</param>
+        /// <exception cref="ArgumentException">Выбрасывается, если массив недостаточной длины.</exception>
+        public override void ParseFromBytes(byte[] data)
         {
-            PlayerId = BitConverter.ToInt32(data, FieldOffsets["PlayerId"]);
+            if (data == null || data.Length < PacketSize)
+            {
+                throw new ArgumentException("Некорректный формат данных для парсинга ExitCommand.", nameof(data));
+            }
+
+            PlayerId = BitConverter.ToInt32(data, _fieldOffsets[nameof(PlayerId)]);
         }
 
-        public byte[] ToBytes()
+        /// <summary>
+        /// Преобразует команду в массив байтов.
+        /// </summary>
+        /// <returns>Массив байтов.</returns>
+        public override byte[] ToBytes()
         {
-            byte[] result = new byte[PacketSize];
+            var result = new byte[PacketSize];
             result[0] = (byte)CommandType;
-            BitConverter.GetBytes(PlayerId).CopyTo(result, FieldOffsets["PlayerId"]);
+            BitConverter.GetBytes(PlayerId).CopyTo(result, _fieldOffsets[nameof(PlayerId)]);
             return result;
         }
-        
-        public async Task Execute(PaperServer server, Socket clientSocket)
+
+        /// <summary>
+        /// Выполняет логику команды выхода.
+        /// </summary>
+        /// <param name="server">Экземпляр сервера.</param>
+        /// <param name="clientSocket">Сокет клиента.</param>
+        /// <returns>Задача выполнения команды.</returns>
+        /// <exception cref="ArgumentNullException">Выбрасывается, если server или clientSocket равны null.</exception>
+        public override async Task ExecuteAsync(PaperServer server, Socket clientSocket)
         {
-            UnityEngine.Debug.Log($"Игрок {PlayerId} выходит из игры...");
+            if (server == null) throw new ArgumentNullException(nameof(server));
+            if (clientSocket == null) throw new ArgumentNullException(nameof(clientSocket));
+
+            Debug.Log($"Игрок {PlayerId} выходит из игры...");
 
             if (server.Players.TryRemove(PlayerId, out _))
             {
-                UnityEngine.Debug.Log($"Игрок {PlayerId} удалён.");
+                Debug.Log($"Игрок {PlayerId} успешно удалён.");
 
                 // Уведомляем всех игроков о выходе
                 var playerExitCommand = new PlayerExitCommand(PlayerId);
-                await server.Broadcast(playerExitCommand.ToBytes());
+                await server.BroadcastAsync(playerExitCommand.ToBytes());
             }
             else
             {
-                UnityEngine.Debug.Log($"Ошибка: Игрок {PlayerId} не найден.");
+                Debug.Log($"Ошибка: Игрок {PlayerId} не найден.");
             }
 
-            clientSocket.Close();
+            try
+            {
+                clientSocket.Shutdown(SocketShutdown.Both);
+            }
+            catch (SocketException ex)
+            {
+                Debug.Log($"Ошибка при закрытии сокета: {ex.Message}");
+            }
+            finally
+            {
+                clientSocket.Close();
+            }
         }
     }
 }

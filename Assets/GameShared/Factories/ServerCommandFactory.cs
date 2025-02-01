@@ -2,18 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using GameShared;
-using GameShared.Commands;
-using GameShared.Interfaces;
 
 namespace GameServer
 {
-
     public class ServerCommandFactory
     {
-        private readonly Dictionary<ClientToServerEvent, Func<IClientToServerCommandHandler>> _commands = new();
+        private readonly Dictionary<ClientToServerEvent, Func<ClientToServerCommand>> _commands = new();
         private readonly Dictionary<ClientToServerEvent, int> _commandSizes = new();
 
-        public ServerCommandFactory(IEnumerable<Func<IClientToServerCommandHandler>> commandFactories)
+        public ServerCommandFactory(IEnumerable<Func<ClientToServerCommand>> commandFactories)
         {
             foreach (var factory in commandFactories)
             {
@@ -21,9 +18,9 @@ namespace GameServer
             }
         }
 
-        public void RegisterCommand(Func<IClientToServerCommandHandler> commandFactory)
+        public void RegisterCommand(Func<ClientToServerCommand> commandFactory)
         {
-            IClientToServerCommandHandler commandInstance = commandFactory();
+            ClientToServerCommand commandInstance = commandFactory();
             _commands[commandInstance.CommandType] = commandFactory;
             _commandSizes[commandInstance.CommandType] = commandInstance.PacketSize;
         }
@@ -33,7 +30,7 @@ namespace GameServer
             return _commandSizes.TryGetValue(commandType, out int size) ? size : 0;
         }
 
-        public IClientToServerCommandHandler? ParseCommand(byte[] data, Socket clientSocket, PaperServer server)
+        public ClientToServerCommand? ParseCommand(byte[] data, Socket clientSocket, PaperServer server)
         {
             ClientToServerEvent type = (ClientToServerEvent)data[0];
 

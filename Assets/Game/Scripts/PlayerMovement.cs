@@ -1,3 +1,5 @@
+using System;
+using System.Threading.Tasks;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -12,50 +14,39 @@ public class PlayerMovement : MonoBehaviour
     private Camera _camera;
     private Vector3 _moveDirection;
 
-    private TrailDrawer _trailDrawer;
-    private CollisionChecker _collisionChecker;
-    private Territory _territory;
-
-    private bool _isOnTerritory = false;
-
     [SerializeField] private bool _isLocalPlayer;
 
-    public void SetMoveDirection(Vector3 moveDirection)
-    {
-        _moveDirection = moveDirection;
-    }
+    public event Func<Vector3, Task> OnDirectionChanged;
 
     private void Awake()
     {
         _rb = GetComponent<Rigidbody>();
         _camera = Camera.main;
-        _trailDrawer = GetComponent<TrailDrawer>();
-        _collisionChecker = FindAnyObjectByType<CollisionChecker>();
-        _territory = FindAnyObjectByType<Territory>();
     }
 
-    private void Update()
+    public void SetMoveDirection(Vector3 direction)
+        { _moveDirection = direction; }
+
+    private async void Update()
     {
         if (_isLocalPlayer && Physics.Raycast(_camera.ScreenPointToRay(Input.mousePosition), out var hit, 10000, _pointTargetLayer))
         {
-            _moveDirection = (hit.point - transform.position).normalized;
-            _moveDirection.y = 0;
-            _pointMarker.position = hit.point;
-        }
+            var newDirection = (hit.point - transform.position).normalized;
+            newDirection.y = 0;
 
-        //// Проверка на вход в территорию
-        //if (_collisionChecker.CheckTerritoryCollision(transform.position))
-        //{
-        //    if (!_isOnTerritory)
-        //    {
-        //        _isOnTerritory = true;
-        //        CaptureTerritory();
-        //    }
-        //}
-        //else
-        //{
-        //    _isOnTerritory = false;
-        //}
+            if (_moveDirection != newDirection)
+            {
+                _moveDirection = newDirection;
+
+                OnDirectionChanged?.Invoke(_moveDirection).ConfigureAwait(false);
+
+                UnityMainThreadDispatcher.Instance.Enqueue(() =>
+                {
+                    _pointMarker.position = hit.point;
+                    Debug.Log("Направление обновлено");
+                });
+            }
+        }
     }
 
     private void FixedUpdate()
@@ -65,17 +56,5 @@ public class PlayerMovement : MonoBehaviour
 
         _rb.MovePosition(movePosition);
         _rb.MoveRotation(moveRotation);
-
-        if (!_isOnTerritory)
-        {
-            _trailDrawer.AddPoint(transform.position);
-        }
-    }
-
-    private void CaptureTerritory()
-    {
-        // Когда игрок возвращается в свою территорию, захватываем её
-        _territory.CaptureArea(_trailDrawer.GetTrail());
-        _trailDrawer.ClearTrail(); // Очищаем след после захвата
     }
 }

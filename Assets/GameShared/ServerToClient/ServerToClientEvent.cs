@@ -1,6 +1,5 @@
 namespace GameShared
 {
-
     public enum ServerToClientEvent : byte
     {
         WELCOME = 1,         // Подтверждение входа в игру
@@ -11,6 +10,7 @@ namespace GameShared
         GAME_STATE,          // Полное обновление карты
         SCORE_UPDATE,        // Обновление очков игрока
         VICTORY,             // Кто-то выиграл
-        PING_RESPONSE        // Ответ на пинг клиента
+        PING_RESPONSE,        // Ответ на пинг клиента
+        REQUEST_POSITIONS
     }
 }

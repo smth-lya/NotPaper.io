@@ -1,55 +1,102 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
+using UnityEngine;
 using System.Threading.Tasks;
 using GameShared.Commands.ServerToClient;
 using GameShared.Entity;
-using GameShared.Interfaces;
+using Random = System.Random;
 
 namespace GameShared.Commands.ClientToServer
 {
-    public class JoinCommand : IClientToServerCommandHandler
+    /// <summary>
+    /// Команда для присоединения игрока к серверу.
+    /// </summary>
+    public sealed class JoinCommand : ClientToServerCommand
     {
-        public ClientToServerEvent CommandType => ClientToServerEvent.JOIN;
-        public int PacketSize => 1; // 1 байт - команда (без PlayerId)
+        private readonly Random _random = new();
 
-        public static Dictionary<string, int> FieldOffsets { get; protected set; } = new();
+        public override ClientToServerEvent CommandType => ClientToServerEvent.JOIN;
+        public override int PacketSize => sizeof(byte); // 1 байт - команда.
 
-        public void ParseFromBytes(byte[] data) { }
+        public override void ParseFromBytes(byte[] data) { }
+        public override byte[] ToBytes() 
+            => new byte[] { (byte)CommandType };
 
-        public byte[] ToBytes()
+        /// <summary>
+        /// Выполняет команду присоединения игрока к серверу.
+        /// </summary>
+        /// <param name="server">Экземпляр сервера.</param>
+        /// <param name="clientSocket">Сокет клиента.</param>
+        /// <returns>Асинхронная задача.</returns>
+        /// <exception cref="ArgumentNullException">Выбрасывается, если server или clientSocket равны null.</exception>
+        public override async Task ExecuteAsync(PaperServer server, Socket clientSocket)
         {
-            byte[] result = new byte[PacketSize];
-            result[0] = (byte)CommandType;
-            return result;
-        }
+            if (server == null) throw new ArgumentNullException(nameof(server));
+            if (clientSocket == null) throw new ArgumentNullException(nameof(clientSocket));
 
-        public async Task Execute(PaperServer server, Socket clientSocket)
-        {
-            UnityEngine.Debug.Log("Игрок хочет присоединиться...");
+            Debug.Log("Игрок хочет присоединиться...");
 
             if (server.Players.Count >= server.MaxPlayers)
             {
-                UnityEngine.Debug.Log("Сервер заполнен. Отказано.");
+                Debug.Log("Сервер заполнен. Отказано.");
                 return;
             }
 
-            // 🔥 Генерируем уникальный `PlayerId`
             int newPlayerId = server.GeneratePlayerId();
+            (Vector3 startPosition, Vector3 startDirection) = GenerateRandomSpawnPoint();
 
-            // Добавляем игрока
-            var player = new PlayerNet(newPlayerId, clientSocket);
+            var player = new PaperPlayer(newPlayerId, clientSocket)
+            {
+                Position = startPosition,
+                Direction = startDirection
+            };
+
             server.Players.TryAdd(newPlayerId, player);
+            server.PlayerPositions[newPlayerId] = (startPosition, startDirection);
 
-            UnityEngine.Debug.Log($"Игрок {newPlayerId} подключен!");
+            Debug.Log($"Игрок {newPlayerId} подключен на ({startPosition}) с направлением {startDirection}");
 
-            // 🔥 Отправляем `WELCOME` с `PlayerId`
-            var welcomeCommand = new WelcomeCommand(newPlayerId);
-            await clientSocket.SendAsync(new ArraySegment<byte>(welcomeCommand.ToBytes()), SocketFlags.None);
+            await SendWelcomePacket(clientSocket, newPlayerId, startPosition, startDirection);
+            await server.BroadcastAsync(new RequestPositionsCommand().ToBytes());
+        }
 
-            // 🔥 Уведомляем всех игроков о новом подключении
-            var playerJoinCommand = new PlayerJoinCommand(newPlayerId);
-            await server.Broadcast(playerJoinCommand.ToBytes());
+        /// <summary>
+        /// Генерирует случайную позицию и направление для нового игрока.
+        /// </summary>
+        private (Vector3 position, Vector3 direction) GenerateRandomSpawnPoint()
+        {
+            Vector3 position = new Vector3()
+            {
+                x = _random.Next(-20, 20),
+                z = _random.Next(-20, 20),
+            };
+
+            Vector3 direction = new Vector3()
+            {
+                x = (float)_random.NextDouble() * 2 - 1, // Так сделано для обеспечения захвата отрицательных значений [-1; 1]
+                z = (float)_random.NextDouble() * 2 - 1,
+            };
+
+            return (position, direction);
+        }
+
+        /// <summary>
+        /// Отправляет игроку приветственный пакет с информацией о его местоположении.
+        /// </summary>
+        private static async Task SendWelcomePacket(Socket clientSocket, int playerId, Vector3 position, Vector3 direction)
+        {
+            var welcomeCommand = new WelcomeCommand(playerId, position, direction);
+            var welcomeBytes = welcomeCommand.ToBytes();
+
+            try
+            {
+                await clientSocket.SendAsync(new ArraySegment<byte>(welcomeBytes), SocketFlags.None);
+            }
+            catch (SocketException ex)
+            {
+                Debug.Log($"Ошибка отправки WELCOME-пакета: {ex.Message}");
+            }
         }
     }
 }
